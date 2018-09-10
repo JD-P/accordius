@@ -1,12 +1,29 @@
 from graphene_django import DjangoObjectType
 import graphene
 from django.contrib.auth.models import User
-from .models import Post, Comment, Vote
+from .models import Profile, Post, Comment, Vote
 import pdb
 
 class UserType(DjangoObjectType):
     class Meta:
         model = User
+    slug = graphene.String()
+    display_name = graphene.String()
+
+    
+    def resolve_slug(self, info):
+        return self.username
+
+    def resolve_display_name(self, info):
+        try:
+            display_name = self.profile_set.all()[0].display_name
+        except IndexError:
+            print("User {} has no profile!".format(self.username))
+            display_name = self.username
+        if display_name:
+            return display_name
+        else:
+            return self.username
 
 class VoteType(DjangoObjectType):
     class Meta:
@@ -44,9 +61,11 @@ class PostType(DjangoObjectType):
         return document.user.id
         
 class Query(object):
-    user = graphene.Field(UserType,
-                          id=graphene.Int(),
-                          username=graphene.String())
+    users_single = graphene.Field(UserType,
+                                  id=graphene.Int(),
+                                  username=graphene.String(),
+                                  document_id=graphene.String(),
+                                  name="UsersSingle")
     all_users = graphene.List(UserType)
     posts_single = graphene.Field(PostType,
                                   _id=graphene.String(name="_id"),
@@ -68,12 +87,16 @@ class Query(object):
 
     all_votes = graphene.List(VoteType)
     
-    def resolve_user(self, info, **kwargs):
+    def resolve_users_single(self, info, **kwargs):
         id = kwargs.get('id')
+        document_id = kwargs.get('document_id')
         username = kwargs.get('username')
 
         if id:
             return User.objects.get(id=id)
+        if document_id:
+            # Mongodb uses this field for uid lookups, we do it for compatibility
+            return User.objects.get(id=document_id)
         if username:
             return User.objects.get(username=username)
 
