@@ -35,8 +35,11 @@ class Post(models.Model):
     title = models.CharField(default="Untitled (this should never appear)",
                              max_length=250)
     url = models.URLField(null=True)
-    #slug = models.CharField(max_length=60)
+    slug = models.CharField(max_length=60)
     base_score = models.FloatField(default=1)
+    body = models.TextField()
+    html_body = models.TextField()
+    vote_count = models.IntegerField(default=0)
     comment_count = models.IntegerField(default=0)
     view_count = models.IntegerField(default=0)
     meta = models.BooleanField(default=False)
@@ -57,8 +60,10 @@ class Comment(models.Model):
     - af: Legacy field for whether this is the Alignment Forum, always false.
     - is_deleted: Whether the post has been hidden from public consumption."""
     id = models.CharField(primary_key=True, max_length=17)
-    user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
-    post = models.ForeignKey(Post, null=True, on_delete=models.SET_NULL)
+    user = models.ForeignKey(User, related_name="author",
+                             null=True, on_delete=models.SET_NULL)
+    post = models.ForeignKey(Post, related_name="comments",
+                             null=True, on_delete=models.SET_NULL)
     parent_comment = models.ForeignKey('Comment',
                                        null=True, on_delete=models.SET_NULL)
     posted_at = models.DateField(default=date.today)
@@ -67,5 +72,18 @@ class Comment(models.Model):
     af = models.BooleanField(default=False)
     is_deleted = models.BooleanField()
 
+class Vote(models.Model):
+    """A vote on a post, comment, or other votable item.
+
+    - user: The user object that made the vote.
+    - voted_at: The date on which the vote was made.
+    - power: The number of points the vote is worth, defaults to 1
+    - vote_type: Whether the vote is an upvote or a downvote"""
+    user = models.ForeignKey(User, related_name="votes", on_delete=models.CASCADE)
+    document_id = models.CharField(max_length=17)
+    voted_at = models.DateField(default=date.today)
+    vote_type = models.CharField(default="smallUpvote", max_length=25)
+    power = models.IntegerField(default=1)
+    
 class Test(models.Model):
     testfield = models.CharField(max_length=50)
