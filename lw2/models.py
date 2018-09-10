@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from django.db import models
 from django.contrib.auth.models import User
 
@@ -28,7 +28,7 @@ class Post(models.Model):
     always false.
     - draft: Whether the post is a draft or not."""
     id = models.CharField(primary_key=True, max_length=17)
-    posted_at = models.DateField(default=date.today)
+    posted_at = models.DateTimeField(default=datetime.today)
     frontpage_date = models.DateField(null=True, default=None)
     curated_date = models.DateField(null=True, default=None)
     user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
@@ -36,7 +36,7 @@ class Post(models.Model):
                              max_length=250)
     url = models.URLField(null=True)
     slug = models.CharField(max_length=60)
-    base_score = models.FloatField(default=1)
+    base_score = models.IntegerField(default=1)
     body = models.TextField()
     html_body = models.TextField()
     vote_count = models.IntegerField(default=0)

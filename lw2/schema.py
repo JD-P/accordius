@@ -2,6 +2,7 @@ from graphene_django import DjangoObjectType
 import graphene
 from django.contrib.auth.models import User
 from .models import Post, Comment, Vote
+import pdb
 
 class UserType(DjangoObjectType):
     class Meta:
@@ -19,12 +20,29 @@ class PostType(DjangoObjectType):
     class Meta:
         model = Post
     _id = graphene.String(name="_id")
-    user_id = graphene.Int()
-    page_url = graphene.String()
+    user_id = graphene.String()
+    page_url = graphene.String(default_value="")
     word_count = graphene.Int(default_value=1)
     all_votes = graphene.List(VoteType, resolver=lambda x,y: [])
-    
 
+    def resolve__id(self,info):
+        #TODO: Make sure we actually grab the correct value here
+        document_id = info.operation.selection_set.selections[0].arguments[0].value.value
+        try:
+            document = Post.objects.get(id=document_id)
+        except:
+            return "error"
+        return document_id
+    
+    def resolve_user_id(self, info):
+        #TODO: Make sure we actually grab the correct value here
+        document_id = info.operation.selection_set.selections[0].arguments[0].value.value
+        try:
+            document = Post.objects.get(id=document_id)
+        except:
+            return "error"
+        return document.user.id
+        
 class Query(object):
     user = graphene.Field(UserType,
                           id=graphene.Int(),
@@ -32,10 +50,10 @@ class Query(object):
     all_users = graphene.List(UserType)
     posts_single = graphene.Field(PostType,
                                   _id=graphene.String(name="_id"),
-                                  posted_at=graphene.types.datetime.Date(),
+                                  posted_at=graphene.types.datetime.DateTime(),
                                   frontpage_date = graphene.types.datetime.Date(),
                                   curated_date = graphene.types.datetime.Date(),
-                                  userId = graphene.Int(),
+                                  userId = graphene.String(),
                                   document_id = graphene.String(),
                                   name="PostsSingle")
     all_posts = graphene.List(PostType)
