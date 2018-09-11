@@ -72,16 +72,16 @@ class PostType(DjangoObjectType):
         return document_id
     
     def resolve_user_id(self, info):
-        #TODO: Make sure we actually grab the correct value here
-        document_id = info.operation.selection_set.selections[0].arguments[0].value.value
-        try:
-            document = Post.objects.get(id=document_id)
-        except:
-            return "error"
-        return document.user.id
+        return str(self.user.id)
 
 class CommentsTerms(graphene.InputObjectType):
     """Search terms for the comments_total and the comments_list."""
+    limit = graphene.Int()
+    post_id = graphene.String()
+    view = graphene.String()
+
+class PostsTerms(graphene.InputObjectType):
+    """Search terms for the posts_list."""
     limit = graphene.Int()
     post_id = graphene.String()
     view = graphene.String()
@@ -102,6 +102,9 @@ class Query(object):
                                   document_id = graphene.String(),
                                   name="PostsSingle")
     all_posts = graphene.List(PostType)
+    posts_list = graphene.Field(graphene.List(PostType),
+                                terms = graphene.Argument(PostsTerms),
+                                name="PostsList")
     comment = graphene.Field(CommentType,
                              id=graphene.String(),
                              posted_at=graphene.types.datetime.Date(),
@@ -147,6 +150,10 @@ class Query(object):
         return None
         
     def resolve_all_posts(self, info, **kwargs):
+        return Post.objects.all()
+
+    def resolve_posts_list(self, info, **kwargs):
+        #TODO: Make this actually return the top 20 posts
         return Post.objects.all()
 
     def resolve_comment(self, info, **kwargs):
