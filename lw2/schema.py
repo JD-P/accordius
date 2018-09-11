@@ -1,5 +1,6 @@
 from graphene_django import DjangoObjectType
 import graphene
+from graphene.types.generic import GenericScalar
 from django.contrib.auth.models import User
 from .models import Profile, Post, Comment, Vote
 import pdb
@@ -59,7 +60,11 @@ class PostType(DjangoObjectType):
         except:
             return "error"
         return document.user.id
-        
+
+class Terms(graphene.InputObjectType):
+    post_id = graphene.String()
+    view = graphene.String()
+    
 class Query(object):
     users_single = graphene.Field(UserType,
                                   id=graphene.Int(),
@@ -81,6 +86,10 @@ class Query(object):
                              posted_at=graphene.types.datetime.Date(),
                              userId = graphene.Int())
     all_comments = graphene.List(CommentType)
+
+    comments_total = graphene.Field(graphene.types.Int,
+                                    terms = graphene.Argument(Terms),
+                                    name="CommentsTotal")
 
     vote = graphene.Field(VoteType,
                           id=graphene.Int())
@@ -125,6 +134,14 @@ class Query(object):
 
     def resolve_all_comments(self, info, **kwargs):
         return Comment.objects.select_related('post').all()
+
+    def resolve_comments_total(self, info, **kwargs):
+        args = dict(kwargs.get('terms'))
+        id = args.get('post_id')
+        try:
+            return Post.objects.get(id=id).comment_count
+        except:
+            return 0
 
     def resolve_vote(self, info, **kwargs):
         id = kwargs.get('id')
