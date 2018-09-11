@@ -34,7 +34,7 @@ class CommentType(DjangoObjectType):
     class Meta:
         model = Comment
     _id = graphene.String(name="_id")
-    user_id = graphene.Int()
+    user_id = graphene.String()
     post_id = graphene.String()
     parent_comment_id = graphene.String()
     page_url = graphene.String(default_value="")
@@ -45,7 +45,7 @@ class CommentType(DjangoObjectType):
         return self.id
     
     def resolve_user_id(self, info):
-        return self.user.id
+        return str(self.user.id)
 
     def resolve_post_id(self, info):
         return self.post.id

@@ -71,10 +71,10 @@ class Comment(models.Model):
     parent_comment = models.ForeignKey('Comment',
                                        null=True, on_delete=models.SET_NULL)
     posted_at = models.DateField(default=date.today)
-    base_score = models.FloatField(default=1)
+    base_score = models.IntegerField(default=1)
     body = models.TextField()
     af = models.BooleanField(default=False)
-    is_deleted = models.BooleanField()
+    is_deleted = models.BooleanField(default=False)
 
 class Vote(models.Model):
     """A vote on a post, comment, or other votable item.
