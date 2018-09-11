@@ -33,6 +33,25 @@ class VoteType(DjangoObjectType):
 class CommentType(DjangoObjectType):
     class Meta:
         model = Comment
+    _id = graphene.String(name="_id")
+    user_id = graphene.Int()
+    post_id = graphene.String()
+    parent_comment_id = graphene.String()
+    page_url = graphene.String(default_value="")
+    all_votes = graphene.List(VoteType, resolver=lambda x,y: [])
+    html_body = graphene.String(default_value="Test comment")
+    
+    def resolve__id(self, info):
+        return self.id
+    
+    def resolve_user_id(self, info):
+        return self.user.id
+
+    def resolve_post_id(self, info):
+        return self.post.id
+
+    def resolve_parent_comment_id(self, info):
+        return self.parent_comment.id
 
 class PostType(DjangoObjectType):
     class Meta:
@@ -61,7 +80,9 @@ class PostType(DjangoObjectType):
             return "error"
         return document.user.id
 
-class Terms(graphene.InputObjectType):
+class CommentsTerms(graphene.InputObjectType):
+    """Search terms for the comments_total and the comments_list."""
+    limit = graphene.Int()
     post_id = graphene.String()
     view = graphene.String()
     
@@ -88,8 +109,12 @@ class Query(object):
     all_comments = graphene.List(CommentType)
 
     comments_total = graphene.Field(graphene.types.Int,
-                                    terms = graphene.Argument(Terms),
+                                    terms = graphene.Argument(CommentsTerms),
                                     name="CommentsTotal")
+
+    comments_list = graphene.Field(graphene.List(CommentType),
+                                   terms = graphene.Argument(CommentsTerms),
+                                   name="CommentsList")
 
     vote = graphene.Field(VoteType,
                           id=graphene.Int())
@@ -142,6 +167,15 @@ class Query(object):
             return Post.objects.get(id=id).comment_count
         except:
             return 0
+
+    def resolve_comments_list(self, info, **kwargs):
+        args = dict(kwargs.get('terms'))
+        id = args.get('post_id')
+        try:
+            document = Post.objects.get(id=id)
+            return document.comments.all()
+        except:
+            return graphene.List(CommentType, resolver=lambda x,y: [])
 
     def resolve_vote(self, info, **kwargs):
         id = kwargs.get('id')

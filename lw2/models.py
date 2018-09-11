@@ -64,7 +64,7 @@ class Comment(models.Model):
     - af: Legacy field for whether this is the Alignment Forum, always false.
     - is_deleted: Whether the post has been hidden from public consumption."""
     id = models.CharField(primary_key=True, max_length=17)
-    user = models.ForeignKey(User, related_name="author",
+    user = models.ForeignKey(User, related_name="comments",
                              null=True, on_delete=models.SET_NULL)
     post = models.ForeignKey(Post, related_name="comments",
                              null=True, on_delete=models.SET_NULL)
