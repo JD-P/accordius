@@ -2,7 +2,9 @@ from graphene_django import DjangoObjectType
 import graphene
 from graphene.types.generic import GenericScalar
 from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, login
 from .models import Profile, Post, Comment, Vote
+from datetime import datetime
 import pdb
 
 class UserType(DjangoObjectType):
@@ -53,6 +55,41 @@ class CommentType(DjangoObjectType):
     def resolve_parent_comment_id(self, info):
         return self.parent_comment.id
 
+class CommentInput(graphene.InputObjectType):
+    body = graphene.String()
+    post_id = graphene.String()
+    parent_comment_id = graphene.String()
+    
+class CommentsNew(graphene.Mutation):
+    class Arguments:
+        document = CommentInput(required=True)
+
+    comment = graphene.Field(CommentType)
+
+    @staticmethod
+    def mutate(root, info, document=None):
+        if not Document:
+            return
+
+        if document.parent_comment_id:
+            parent_comment =  Comment.objects.get(document.parent_comment_id)
+        else:
+            parent_comment = None
+
+        post = Post.objects.get(document.post_id)
+
+        user = info.context.user
+        
+        comment = CommentType(
+            id = id,
+            user = user,
+            post = post,
+            parent_comment = parent_comment,
+            posted_at = datetime.today(),
+            body=document.body)
+
+        return CommentsNew(document=comment)
+    
 class PostType(DjangoObjectType):
     class Meta:
         model = Post
@@ -63,17 +100,26 @@ class PostType(DjangoObjectType):
     all_votes = graphene.List(VoteType, resolver=lambda x,y: [])
 
     def resolve__id(self,info):
-        #TODO: Make sure we actually grab the correct value here
-        document_id = info.operation.selection_set.selections[0].arguments[0].value.value
-        try:
-            document = Post.objects.get(id=document_id)
-        except:
-            return "error"
-        return document_id
+        return self.id
     
     def resolve_user_id(self, info):
         return str(self.user.id)
 
+class PostInput(graphene.InputObjectType):
+    pass
+
+class PostsNew(graphene.Mutation):
+    class Arguments:
+        document = PostInput(required=True)
+
+    post = graphene.Field(PostType)
+
+    @staticmethod
+    def mutate(root, info, document=None):
+        post = PostType()
+        return PostsNew(document=post)
+            
+    
 class CommentsTerms(graphene.InputObjectType):
     """Search terms for the comments_total and the comments_list."""
     limit = graphene.Int()
@@ -87,6 +133,11 @@ class PostsTerms(graphene.InputObjectType):
     view = graphene.String()
     
 class Query(object):
+
+    login = graphene.Field(graphene.String,
+                          username=graphene.String(),
+                          password=graphene.String(),
+                          name="Login")
     users_single = graphene.Field(UserType,
                                   id=graphene.Int(),
                                   username=graphene.String(),
@@ -123,6 +174,16 @@ class Query(object):
                           id=graphene.Int())
 
     all_votes = graphene.List(VoteType)
+
+    def resolve_login(self, info, **kwargs):
+        username = kwargs.get('username')
+        password = kwargs.get('password')
+        user = authenticate(info.context, username=username, password=password)
+        if user is not None:
+            login(info.context, user)
+            return info.context.session.session_key
+        else:
+            return None
     
     def resolve_users_single(self, info, **kwargs):
         id = kwargs.get('id')
@@ -150,7 +211,9 @@ class Query(object):
         return None
         
     def resolve_all_posts(self, info, **kwargs):
-        return Post.objects.all()
+        #TODO: Figure out a better way to maintain compatibility here
+        #...If there is one.
+        return PostType.objects.all()
 
     def resolve_posts_list(self, info, **kwargs):
         #TODO: Make this actually return the top 20 posts
