@@ -4,9 +4,17 @@ from graphene.types.generic import GenericScalar
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
 from .models import Profile, Post, Comment, Vote
-from datetime import datetime
+from datetime import datetime, timezone
+import hashlib
+import base64
 import pdb
 
+def make_id(username, utc_timestamp):
+    hashable = username + str(utc_timestamp)
+    hash_raw = hashlib.md5(hashable.encode())
+    hash_b64 = base64.b64encode(hash_raw.digest()).decode()
+    return hash_b64[:17]
+    
 class UserType(DjangoObjectType):
     class Meta:
         model = User
@@ -55,40 +63,51 @@ class CommentType(DjangoObjectType):
     def resolve_parent_comment_id(self, info):
         return self.parent_comment.id
 
-class CommentInput(graphene.InputObjectType):
+class CommentsInput(graphene.InputObjectType):
     body = graphene.String()
     post_id = graphene.String()
     parent_comment_id = graphene.String()
     
 class CommentsNew(graphene.Mutation):
     class Arguments:
-        document = CommentInput(required=True)
+        document = CommentsInput()
 
     comment = graphene.Field(CommentType)
+    _id = graphene.String()
 
+    def resolve__id(self, info):
+        return None
+    
     @staticmethod
     def mutate(root, info, document=None):
-        if not Document:
+        if not document:
             return
-
+        
         if document.parent_comment_id:
-            parent_comment =  Comment.objects.get(document.parent_comment_id)
+            parent_comment =  Comment.objects.get(id=document.parent_comment_id)
         else:
             parent_comment = None
-
-        post = Post.objects.get(document.post_id)
+            
+        post = Post.objects.get(id=document.post_id)
 
         user = info.context.user
+
+        posted_at = datetime.today()
+
+        _id = make_id(user.username,
+                      posted_at.replace(tzinfo=timezone.utc).timestamp())
         
-        comment = CommentType(
-            id = id,
+        comment = Comment(
+            id = _id,
             user = user,
             post = post,
             parent_comment = parent_comment,
-            posted_at = datetime.today(),
+            posted_at = posted_at,
             body=document.body)
+        #TODO: Am I supposed to call save here or is there framework stuff I'm missing?
+        comment.save()
 
-        return CommentsNew(document=comment)
+        return CommentsNew(comment=comment)
     
 class PostType(DjangoObjectType):
     class Meta:
@@ -169,7 +188,9 @@ class Query(object):
     comments_list = graphene.Field(graphene.List(CommentType),
                                    terms = graphene.Argument(CommentsTerms),
                                    name="CommentsList")
-
+    comments_new = graphene.Field(CommentType,
+                                  _id = graphene.String(name="_id"))
+    
     vote = graphene.Field(VoteType,
                           id=graphene.Int())
 
@@ -255,3 +276,7 @@ class Query(object):
 
         return None
         
+
+class Mutations(object):
+    comments_new = CommentsNew.Field(name="CommentsNew")
+    

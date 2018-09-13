@@ -33,8 +33,8 @@ class Post(models.Model):
     - draft: Whether the post is a draft or not."""
     id = models.CharField(primary_key=True, max_length=17)
     posted_at = models.DateTimeField(default=datetime.today)
-    frontpage_date = models.DateField(null=True, default=None)
-    curated_date = models.DateField(null=True, default=None)
+    frontpage_date = models.DateTimeField(null=True, default=None)
+    curated_date = models.DateTimeField(null=True, default=None)
     user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
     title = models.CharField(default="Untitled (this should never appear)",
                              max_length=250)
@@ -70,7 +70,7 @@ class Comment(models.Model):
                              null=True, on_delete=models.SET_NULL)
     parent_comment = models.ForeignKey('Comment',
                                        null=True, on_delete=models.SET_NULL)
-    posted_at = models.DateField(default=date.today)
+    posted_at = models.DateTimeField(default=datetime.today)
     base_score = models.IntegerField(default=1)
     body = models.TextField()
     af = models.BooleanField(default=False)
@@ -85,7 +85,7 @@ class Vote(models.Model):
     - vote_type: Whether the vote is an upvote or a downvote"""
     user = models.ForeignKey(User, related_name="votes", on_delete=models.CASCADE)
     document_id = models.CharField(max_length=17)
-    voted_at = models.DateField(default=date.today)
+    voted_at = models.DateTimeField(default=datetime.today)
     vote_type = models.CharField(default="smallUpvote", max_length=25)
     power = models.IntegerField(default=1)
     
