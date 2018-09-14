@@ -76,7 +76,7 @@ class CommentsNew(graphene.Mutation):
     _id = graphene.String()
 
     def resolve__id(self, info):
-        return None
+        return self.comment.id
     
     @staticmethod
     def mutate(root, info, document=None):
@@ -288,6 +288,10 @@ class Query(object):
     def resolve_comments_list(self, info, **kwargs):
         args = dict(kwargs.get('terms'))
         id = args.get('post_id')
+        view = args.get('view')
+        if view == 'recentComments':
+            return Comment.objects.all()
+            
         try:
             document = Post.objects.get(id=id)
             return document.comments.all()
