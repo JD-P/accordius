@@ -172,6 +172,8 @@ class PostsTerms(graphene.InputObjectType):
     limit = graphene.Int()
     post_id = graphene.String()
     view = graphene.String()
+    # Legacy field for LW 2 compatibility
+    meta = graphene.Boolean()
     
 class Query(object):
 
