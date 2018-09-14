@@ -108,6 +108,30 @@ class CommentsNew(graphene.Mutation):
         comment.save()
 
         return CommentsNew(comment=comment)
+
+class CommentsEdit(graphene.Mutation):
+    class Arguments:
+        document_id = graphene.String()
+        set = CommentsInput()
+
+    _id = graphene.String(name="_id")
+    comment = graphene.Field(CommentType)
+    document_id = graphene.String()
+
+    def resolve__id(self, info):
+        return self.comment.id
+    
+    @staticmethod
+    def mutate(root, info, document_id=None, set=None):
+        pdb.set_trace()
+        if not set:
+            return None
+        comment = Comment.objects.get(id=document_id)
+        if info.context.user != comment.user:
+            return None
+        comment.body = set.body
+        comment.save()
+        return CommentsEdit(comment=comment)
     
 class PostType(DjangoObjectType):
     class Meta:
@@ -218,6 +242,9 @@ class Query(object):
                                    name="CommentsList")
     comments_new = graphene.Field(CommentType,
                                   _id = graphene.String(name="_id"))
+
+    comments_edit = graphene.Field(CommentType,
+                                   _id = graphene.String(name="_id"))
     
     vote = graphene.Field(VoteType,
                           id=graphene.Int())
@@ -312,4 +339,4 @@ class Query(object):
 class Mutations(object):
     posts_new = PostsNew.Field(name="PostsNew")
     comments_new = CommentsNew.Field(name="CommentsNew")
-    
+    comments_edit = CommentsEdit.Field(name="CommentsEdit")
