@@ -123,19 +123,41 @@ class PostType(DjangoObjectType):
     
     def resolve_user_id(self, info):
         return str(self.user.id)
-
-class PostInput(graphene.InputObjectType):
-    pass
+    
+class PostsInput(graphene.InputObjectType):
+    title = graphene.String()
+    body = graphene.String()
 
 class PostsNew(graphene.Mutation):
     class Arguments:
-        document = PostInput(required=True)
+        document = PostsInput()
 
-    post = graphene.Field(PostType)
+    document = graphene.Field(PostType)
+    _id = graphene.String(name="_id")
+    slug = graphene.String()
+
+    def resolve__id(self, info):
+        return self.document.id
+
+    def resolve_slug(self, info):
+        return self.document.slug
 
     @staticmethod
     def mutate(root, info, document=None):
-        post = PostType()
+        user = info.context.user
+        posted_at = datetime.today()
+        _id = make_id(user.username,
+                      posted_at.replace(tzinfo=timezone.utc).timestamp())
+        slug = document.title.strip().lower().replace(" ", "-")[:60]
+        post = Post(id=_id,
+                    posted_at=posted_at,
+                    user=user,
+                    title=document.title,
+                    slug=slug,
+                    body=document.body,
+                    draft=False)
+        #TODO: Is this how I'm supposed to be saving my post or is there framework magic?
+        post.save()
         return PostsNew(document=post)
             
     
@@ -175,6 +197,10 @@ class Query(object):
     posts_list = graphene.Field(graphene.List(PostType),
                                 terms = graphene.Argument(PostsTerms),
                                 name="PostsList")
+    posts_new = graphene.Field(PostType,
+                               _id = graphene.String(name="_id"),
+                               slug = graphene.String(),
+                               name="PostsNew")
     comment = graphene.Field(CommentType,
                              id=graphene.String(),
                              posted_at=graphene.types.datetime.Date(),
@@ -278,5 +304,6 @@ class Query(object):
         
 
 class Mutations(object):
+    posts_new = PostsNew.Field(name="PostsNew")
     comments_new = CommentsNew.Field(name="CommentsNew")
     
