@@ -152,6 +152,11 @@ class PostsInput(graphene.InputObjectType):
     title = graphene.String()
     body = graphene.String()
 
+class PostsUnset(graphene.InputObjectType):
+    meta = graphene.Boolean()
+    draft = graphene.Boolean()
+    url = graphene.String()   
+
 class PostsNew(graphene.Mutation):
     class Arguments:
         document = PostsInput()
@@ -184,7 +189,35 @@ class PostsNew(graphene.Mutation):
         post.save()
         return PostsNew(document=post)
             
+class PostsEdit(graphene.Mutation):
+    class Arguments:
+        document_id = graphene.String()
+        unset = PostsUnset()
+        set = PostsInput()
     
+    post = graphene.Field(PostType)
+    _id = graphene.String(name="_id")
+    slug = graphene.String()
+    @staticmethod
+    def mutate(root, info, document_id=None, set=None, unset=None):
+        if not set:
+            return None
+        post = Post.objects.get(id=document_id)
+        if info.context.user != post.user:
+            return None
+        if set.title != None:
+            post.title = set.title
+        if set.body != None:
+            post.body = set.body
+        if unset.url:
+            post.url = None
+        if unset.meta:
+            post.meta = False
+        if unset.draft:
+            post.draft = False
+        post.save()
+        return PostsEdit(post=post)
+
 class CommentsTerms(graphene.InputObjectType):
     """Search terms for the comments_total and the comments_list."""
     limit = graphene.Int()
@@ -227,6 +260,10 @@ class Query(object):
                                _id = graphene.String(name="_id"),
                                slug = graphene.String(),
                                name="PostsNew")
+    posts_edit = graphene.Field(PostType,
+                                _id = graphene.String(name="_id"),
+                                slug = graphene.String(),
+                                name="PostsEdit")
     comment = graphene.Field(CommentType,
                              id=graphene.String(),
                              posted_at=graphene.types.datetime.Date(),
@@ -338,5 +375,9 @@ class Query(object):
 
 class Mutations(object):
     posts_new = PostsNew.Field(name="PostsNew")
+    posts_edit = PostsEdit.Field(name="PostsEdit")
     comments_new = CommentsNew.Field(name="CommentsNew")
     comments_edit = CommentsEdit.Field(name="CommentsEdit")
+
+
+
