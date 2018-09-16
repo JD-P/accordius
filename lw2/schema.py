@@ -64,14 +64,20 @@ class VoteType(DjangoObjectType):
 class CommentType(DjangoObjectType):
     class Meta:
         model = Comment
-    _id = graphene.String(name="_id")
-    user_id = graphene.String()
-    post_id = graphene.String()
-    parent_comment_id = graphene.String()
+        description="A comment on a post or other commentable object."
+    _id = graphene.String(name="_id",
+                          description="17 character truncated base-64 encoded md5 hash.")
+    user_id = graphene.String(description="ID value of the comments author.")
+    post_id = graphene.String(
+        description="ID value of the post on which the comment is made.")
+    parent_comment_id = graphene.String(
+        description="ID value of the comment above, if it exists.")
     page_url = graphene.String(default_value="")
     all_votes = graphene.List(VoteType, resolver=lambda x,y: [])
-    html_body = graphene.String()
-    af = graphene.Boolean()
+    html_body = graphene.String(
+        description="Dynamic field that renders markdown body as html.")
+    af = graphene.Boolean(
+        description="Legacy field for whether we're on alignment forum, always false.")
     
     def resolve__id(self, info):
         return self.id
