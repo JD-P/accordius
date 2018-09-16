@@ -18,7 +18,7 @@ def make_id(username, utc_timestamp):
     hashable = username + str(utc_timestamp)
     hash_raw = hashlib.md5(hashable.encode())
     hash_b64 = base64.b64encode(hash_raw.digest()).decode()
-    return hash_b64[:17]
+    return hash_b64[:17].replace("/","_").replace("+","-")
     
 class UserType(DjangoObjectType):
     class Meta:
