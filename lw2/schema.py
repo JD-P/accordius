@@ -18,7 +18,10 @@ def make_id(username, utc_timestamp):
 class UserType(DjangoObjectType):
     class Meta:
         model = User
-
+        only_fields = {'id','_id', 'username','date_joined',
+                       'posts','comments','slug',
+                       'displayName','karma'}
+        
     _id = graphene.Int(name="_id")
     slug = graphene.String()
     display_name = graphene.String()
@@ -51,6 +54,7 @@ class UserType(DjangoObjectType):
 class VoteType(DjangoObjectType):
     class Meta:
         model = Vote
+        only_fields = {'document_id','voted_at','vote_type','power'}
 
 class CommentType(DjangoObjectType):
     class Meta:
@@ -62,6 +66,7 @@ class CommentType(DjangoObjectType):
     page_url = graphene.String(default_value="")
     all_votes = graphene.List(VoteType, resolver=lambda x,y: [])
     html_body = graphene.String(default_value="Test comment")
+    af = graphene.Boolean()
     
     def resolve__id(self, info):
         return self.id
@@ -74,6 +79,10 @@ class CommentType(DjangoObjectType):
 
     def resolve_parent_comment_id(self, info):
         return self.parent_comment.id
+
+    def resolve_af(self, info):
+        """Legacy field for whether this is the Alignment Forum, always false."""
+        return False
 
 class CommentsInput(graphene.InputObjectType):
     body = graphene.String()
@@ -150,15 +159,32 @@ class PostType(DjangoObjectType):
         model = Post
     _id = graphene.String(name="_id")
     user_id = graphene.String()
+    html_body = graphene.String()
     page_url = graphene.String(default_value="")
     word_count = graphene.Int(default_value=1)
     all_votes = graphene.List(VoteType, resolver=lambda x,y: [])
+    meta = graphene.Boolean()
+    af = graphene.Boolean()
 
     def resolve__id(self,info):
         return self.id
     
     def resolve_user_id(self, info):
         return str(self.user.id)
+
+    def resolve_html_body(self, info):
+        """Create an HTML text from the Markdown post body."""
+        return "<p>Placeholder body</p>"
+
+    def resolve_meta(self, info):
+        """Legacy field that says whether the post goes into the 'meta' section,
+        of the website, whatever that means in our software."""
+        return False
+
+    def resolve_af(self, info):
+        """Legacy field that says whether the post is part of the Alignment Forum,
+        always false."""
+        return False
     
 class PostsInput(graphene.InputObjectType):
     title = graphene.String()

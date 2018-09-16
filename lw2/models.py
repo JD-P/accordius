@@ -27,28 +27,22 @@ class Post(models.Model):
     - base_score: The score of the post.
     - comment_count: The number of comments on the post.
     - view_count: How many views the post has gotten since it was published.
-    - meta: Legacy field that says whether the post goes into the 'meta' section,
-    of the website, whatever that means in our software.
-    - af: Legacy field that says whether the post is part of the Alignment Forum,
-    always false.
     - draft: Whether the post is a draft or not."""
     id = models.CharField(primary_key=True, max_length=17)
     posted_at = models.DateTimeField(default=datetime.today)
     frontpage_date = models.DateTimeField(null=True, default=None)
     curated_date = models.DateTimeField(null=True, default=None)
-    user = models.ForeignKey(User, null=True, on_delete=models.SET_NULL)
+    user = models.ForeignKey(User, related_name="posts",
+                             null=True, on_delete=models.SET_NULL)
     title = models.CharField(default="Untitled (this should never appear)",
                              max_length=250)
     url = models.URLField(null=True)
     slug = models.CharField(max_length=60)
     base_score = models.IntegerField(default=1)
     body = models.TextField()
-    html_body = models.TextField()
     vote_count = models.IntegerField(default=0)
     comment_count = models.IntegerField(default=0)
     view_count = models.IntegerField(default=0)
-    meta = models.BooleanField(default=False)
-    af = models.BooleanField(default=False)
     draft = models.BooleanField(default=True)
 
 class Comment(models.Model):
@@ -62,7 +56,6 @@ class Comment(models.Model):
     - posted_at: The time at which the comment was posted.
     - base_score: The score of the comment object.
     - body: A markdown text comment body.
-    - af: Legacy field for whether this is the Alignment Forum, always false.
     - is_deleted: Whether the post has been hidden from public consumption."""
     id = models.CharField(primary_key=True, max_length=17)
     user = models.ForeignKey(User, related_name="comments",
@@ -74,7 +67,6 @@ class Comment(models.Model):
     posted_at = models.DateTimeField(default=datetime.today)
     base_score = models.IntegerField(default=1)
     body = models.TextField()
-    af = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
 
 class Vote(models.Model):
@@ -89,6 +81,3 @@ class Vote(models.Model):
     voted_at = models.DateTimeField(default=datetime.today)
     vote_type = models.CharField(default="smallUpvote", max_length=25)
     power = models.IntegerField(default=1)
-    
-class Test(models.Model):
-    testfield = models.CharField(max_length=50)
