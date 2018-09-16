@@ -18,9 +18,14 @@ def make_id(username, utc_timestamp):
 class UserType(DjangoObjectType):
     class Meta:
         model = User
+
+    _id = graphene.Int(name="_id")
     slug = graphene.String()
     display_name = graphene.String()
+    karma = graphene.Int()
 
+    def resolve__id(self, info):
+        return self.id
     
     def resolve_slug(self, info):
         return self.username
@@ -35,6 +40,13 @@ class UserType(DjangoObjectType):
             return display_name
         else:
             return self.username
+
+    def resolve_karm(self, info):
+        try:
+            return self.profile_set.all()[0].karma
+        except IndexError:
+            print("User {} has no profile!".format(self.username))
+            return None
 
 class VoteType(DjangoObjectType):
     class Meta:
@@ -228,19 +240,30 @@ class PostsTerms(graphene.InputObjectType):
     """Search terms for the posts_list."""
     limit = graphene.Int()
     post_id = graphene.String()
+    user_id = graphene.Int()
     view = graphene.String()
     # Legacy field for LW 2 compatibility
+    # Should be boolean, but sometimes presents as null so generic required 
     meta = graphene.Boolean()
+
+class APIDescriptions(object):
+    """The description texts for the various entries in the API. Because these are 
+    long they're being put in a separate container class for formatting sake."""
+    login = """Log in as a user. This returns a session-id that can be passed in
+    an authentication header to gain privileged actions.
+
+    Example query: {Login(username:"admin" password:"mypassword")}
+    """
     
 class Query(object):
-
     login = graphene.Field(graphene.String,
-                          username=graphene.String(),
-                          password=graphene.String(),
-                          name="Login")
+                           username=graphene.String(),
+                           password=graphene.String(),
+                           name="Login",
+                           description=APIDescriptions.login)
     users_single = graphene.Field(UserType,
-                                  id=graphene.Int(),
-                                  username=graphene.String(),
+                                  id=graphene.Int(name="_id"),
+                                  slug=graphene.String(),
                                   document_id=graphene.String(),
                                   name="UsersSingle")
     all_users = graphene.List(UserType)
@@ -301,15 +324,15 @@ class Query(object):
     def resolve_users_single(self, info, **kwargs):
         id = kwargs.get('id')
         document_id = kwargs.get('document_id')
-        username = kwargs.get('username')
+        slug = kwargs.get('slug')
 
         if id:
             return User.objects.get(id=id)
         if document_id:
             # Mongodb uses this field for uid lookups, we do it for compatibility
             return User.objects.get(id=document_id)
-        if username:
-            return User.objects.get(username=username)
+        if slug:
+            return User.objects.get(username=slug)
 
         return None
     
@@ -329,6 +352,10 @@ class Query(object):
         return PostType.objects.all()
 
     def resolve_posts_list(self, info, **kwargs):
+        args = kwargs.get("terms")
+        if args.user_id:
+            user = User.objects.get(id=args.user_id)
+            return Post.objects.filter(user=user)
         #TODO: Make this actually return the top 20 posts
         return Post.objects.all()
 

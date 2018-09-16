@@ -7,7 +7,8 @@ from django.contrib.auth.models import User
 
 class Profile(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    display_name = models.CharField(max_length=40)
+    display_name = models.CharField(null=True, max_length=40)
+    karma = models.IntegerField(default=1)
 
 class Post(models.Model):
     """A post object.
