@@ -5,9 +5,14 @@ from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
 from .models import Profile, Post, Comment, Vote
 from datetime import datetime, timezone
+import markdown
+from mdx_bleach.extension import BleachExtension
 import hashlib
 import base64
 import pdb
+
+bleach = BleachExtension()
+md = markdown.Markdown(extensions=[bleach])
 
 def make_id(username, utc_timestamp):
     hashable = username + str(utc_timestamp)
@@ -65,7 +70,7 @@ class CommentType(DjangoObjectType):
     parent_comment_id = graphene.String()
     page_url = graphene.String(default_value="")
     all_votes = graphene.List(VoteType, resolver=lambda x,y: [])
-    html_body = graphene.String(default_value="Test comment")
+    html_body = graphene.String()
     af = graphene.Boolean()
     
     def resolve__id(self, info):
@@ -80,6 +85,9 @@ class CommentType(DjangoObjectType):
     def resolve_parent_comment_id(self, info):
         return self.parent_comment.id
 
+    def resolve_html_body(self, info):
+        return md.convert(self.body)
+    
     def resolve_af(self, info):
         """Legacy field for whether this is the Alignment Forum, always false."""
         return False
@@ -174,7 +182,7 @@ class PostType(DjangoObjectType):
 
     def resolve_html_body(self, info):
         """Create an HTML text from the Markdown post body."""
-        return "<p>Placeholder body</p>"
+        return md.convert(self.body)
 
     def resolve_meta(self, info):
         """Legacy field that says whether the post goes into the 'meta' section,
