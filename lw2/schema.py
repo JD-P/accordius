@@ -152,7 +152,6 @@ class CommentsEdit(graphene.Mutation):
     
     @staticmethod
     def mutate(root, info, document_id=None, set=None):
-        pdb.set_trace()
         if not set:
             return None
         comment = Comment.objects.get(id=document_id)
