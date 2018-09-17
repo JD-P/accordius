@@ -3,6 +3,7 @@ import graphene
 from graphene.types.generic import GenericScalar
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
+from django.contrib.sessions.backends.db import SessionStore
 from .models import Profile, Post, Comment, Vote
 from datetime import datetime, timezone
 import markdown
@@ -254,7 +255,7 @@ class PostsNew(graphene.Mutation):
 
     @staticmethod
     def mutate(root, info, document=None):
-        user = info.context.user
+        user = User.objects.get(id = SessionStore(session_key = info.context.META.get('HTTP_AUTHORIZATION')).get('_auth_user_id'))
         posted_at = datetime.today()
         _id = make_id(user.username,
                       posted_at.replace(tzinfo=timezone.utc).timestamp())
