@@ -97,6 +97,7 @@ class CommentType(DjangoObjectType):
     parent_comment_id = graphene.String(
         description="ID value of the comment above, if it exists.")
     page_url = graphene.String(default_value="")
+    vote_count = graphene.Int()
     all_votes = graphene.List(VoteType, resolver=lambda x,y: [])
     html_body = graphene.String(
         description="Dynamic field that renders markdown body as html.")
@@ -117,6 +118,9 @@ class CommentType(DjangoObjectType):
 
     def resolve_html_body(self, info):
         return md.convert(self.body)
+
+    def resolve_vote_count(self, info):
+        return Vote.objects.filter(document_id=self.id).count()
     
     def resolve_af(self, info):
         """Legacy field for whether this is the Alignment Forum, always false."""
