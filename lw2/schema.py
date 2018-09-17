@@ -56,6 +56,29 @@ class UserType(DjangoObjectType):
             print("User {} has no profile!".format(self.username))
             return None
 
+class Login(graphene.Mutation):
+    class Arguments:
+        username = graphene.String()
+        password = graphene.String()
+
+    user_id = graphene.Int()
+    session_key = graphene.String()
+    expiration = graphene.Float()
+    
+    @staticmethod
+    def mutate(root, info, username=None, password=None):
+        user = authenticate(info.context, username=username, password=password)
+        if user is not None:
+            login(info.context, user)
+            return Login(user_id=user.id,
+                         session_key=info.context.session.session_key,
+                         expiration=(
+                             info.context.session.get_expiry_date().timestamp())
+            )
+                         
+        else:
+            return None
+        
 class VoteType(DjangoObjectType):
     class Meta:
         model = Vote
@@ -170,14 +193,21 @@ class CommentsEdit(graphene.Mutation):
 class PostType(DjangoObjectType):
     class Meta:
         model = Post
+        description="""A post to the forum. Posts can be url posts pointing to \
+        outside resources or original content hosted on the site, or both."""
     _id = graphene.String(name="_id")
-    user_id = graphene.String()
+    user_id = graphene.String(
+        description="ID value of the user that authored the post.")
     html_body = graphene.String()
     page_url = graphene.String(default_value="")
-    word_count = graphene.Int(default_value=1)
+    word_count = graphene.Int(default_value=1,
+                              description="Number of words in post body.")
     all_votes = graphene.List(VoteType, resolver=lambda x,y: [])
-    meta = graphene.Boolean()
-    af = graphene.Boolean()
+    meta = graphene.Boolean(
+        description="""Legacy field for whether our post goes in 'meta' section, \
+        may or may not exist in accordius.""")
+    af = graphene.Boolean(
+        description="Legacy field for whether we're in alignment forum, always false.")
 
     def resolve__id(self,info):
         return self.id
@@ -295,11 +325,6 @@ class APIDescriptions(object):
     """
     
 class Query(object):
-    login = graphene.Field(graphene.String,
-                           username=graphene.String(),
-                           password=graphene.String(),
-                           name="Login",
-                           description=APIDescriptions.login)
     users_single = graphene.Field(UserType,
                                   id=graphene.Int(name="_id"),
                                   slug=graphene.String(),
@@ -348,17 +373,7 @@ class Query(object):
     vote = graphene.Field(VoteType,
                           id=graphene.Int())
 
-    all_votes = graphene.List(VoteType)
-
-    def resolve_login(self, info, **kwargs):
-        username = kwargs.get('username')
-        password = kwargs.get('password')
-        user = authenticate(info.context, username=username, password=password)
-        if user is not None:
-            login(info.context, user)
-            return info.context.session.session_key
-        else:
-            return None
+    all_votes = graphene.List(VoteType)        
     
     def resolve_users_single(self, info, **kwargs):
         id = kwargs.get('id')
@@ -440,6 +455,7 @@ class Query(object):
         
 
 class Mutations(object):
+    login = Login.Field(name="Login")
     posts_new = PostsNew.Field(name="PostsNew")
     posts_edit = PostsEdit.Field(name="PostsEdit")
     comments_new = CommentsNew.Field(name="CommentsNew")
