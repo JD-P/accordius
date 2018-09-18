@@ -180,7 +180,7 @@ class CommentsNew(graphene.Mutation):
         _id = make_id(user.username,
                       posted_at.replace(tzinfo=timezone.utc).timestamp())
         
-        comment = Comment(
+        comment = CommentModel(
             id = _id,
             user = user,
             post = post,
