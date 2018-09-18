@@ -85,7 +85,7 @@ class Login(graphene.Mutation):
             )
                          
         else:
-            return None
+            raise ValueError("Incorrect username or password!")
         
 class VoteType(DjangoObjectType):
     class Meta:
@@ -156,7 +156,7 @@ class CommentsNew(graphene.Mutation):
         document = CommentsInput()
 
     comment = graphene.Field(Comment)
-    _id = graphene.String()
+    _id = graphene.String(name="_id")
 
     def resolve__id(self, info):
         return self.comment.id
