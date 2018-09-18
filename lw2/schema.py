@@ -163,18 +163,18 @@ class CommentsNew(graphene.Mutation):
     
     @staticmethod
     def mutate(root, info, document=None):
+        user = User.objects.get(id = SessionStore(session_key = info.context.META.get('HTTP_AUTHORIZATION')).get('_auth_user_id'))
         if not document:
             return
-        
+        if not user.is_authenticated:
+            raise ValueError("You're not logged in!")
         if document.parent_comment_id:
             parent_comment =  CommentModel.objects.get(id=document.parent_comment_id)
         else:
             parent_comment = None
             
         post = PostModel.objects.get(id=document.post_id)
-
-        user = info.context.user
-
+        
         posted_at = datetime.today()
 
         _id = make_id(user.username,
