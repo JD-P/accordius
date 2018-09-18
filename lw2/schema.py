@@ -4,7 +4,9 @@ from graphene.types.generic import GenericScalar
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
 from django.contrib.sessions.backends.db import SessionStore
-from .models import Profile, Post, Comment, Vote
+from .models import Profile,Vote
+from .models import Post as PostModel
+from .models import Comment as CommentModel
 from datetime import datetime, timezone
 import markdown
 from mdx_bleach.extension import BleachExtension
@@ -20,6 +22,11 @@ def make_id(username, utc_timestamp):
     hash_raw = hashlib.md5(hashable.encode())
     hash_b64 = base64.b64encode(hash_raw.digest()).decode()
     return hash_b64[:17].replace("/","_").replace("+","-")
+
+def make_id_from_user(username):
+    """Wrapper around make_id that eliminates finnicky time handling code."""
+    return make_id(username,
+                   datetime.today().replace(tzinfo=timezone.utc).timestamp())
     
 class UserType(DjangoObjectType):
     class Meta:
@@ -84,10 +91,15 @@ class VoteType(DjangoObjectType):
     class Meta:
         model = Vote
         only_fields = {'document_id','voted_at','vote_type','power'}
+    _id = graphene.Int(name="_id")
 
-class CommentType(DjangoObjectType):
+    def resolve__id(self, info):
+        return self.id
+        
+        
+class Comment(DjangoObjectType):
     class Meta:
-        model = Comment
+        model = CommentModel
         description="A comment on a post or other commentable object."
     _id = graphene.String(name="_id",
                           description="17 character truncated base-64 encoded md5 hash.")
@@ -98,6 +110,7 @@ class CommentType(DjangoObjectType):
         description="ID value of the comment above, if it exists.")
     page_url = graphene.String(default_value="")
     vote_count = graphene.Int()
+    current_user_votes = graphene.List(VoteType)
     all_votes = graphene.List(VoteType, resolver=lambda x,y: [])
     html_body = graphene.String(
         description="Dynamic field that renders markdown body as html.")
@@ -121,6 +134,13 @@ class CommentType(DjangoObjectType):
 
     def resolve_vote_count(self, info):
         return Vote.objects.filter(document_id=self.id).count()
+
+    def resolve_current_user_votes(self, info):
+        try:
+            return Vote.objects.filter(user=info.context.user,
+                                       document_id=self.id)
+        except IndexError:
+            return []
     
     def resolve_af(self, info):
         """Legacy field for whether this is the Alignment Forum, always false."""
@@ -135,7 +155,7 @@ class CommentsNew(graphene.Mutation):
     class Arguments:
         document = CommentsInput()
 
-    comment = graphene.Field(CommentType)
+    comment = graphene.Field(Comment)
     _id = graphene.String()
 
     def resolve__id(self, info):
@@ -147,11 +167,11 @@ class CommentsNew(graphene.Mutation):
             return
         
         if document.parent_comment_id:
-            parent_comment =  Comment.objects.get(id=document.parent_comment_id)
+            parent_comment =  CommentModel.objects.get(id=document.parent_comment_id)
         else:
             parent_comment = None
             
-        post = Post.objects.get(id=document.post_id)
+        post = PostModel.objects.get(id=document.post_id)
 
         user = info.context.user
 
@@ -178,7 +198,7 @@ class CommentsEdit(graphene.Mutation):
         set = CommentsInput()
 
     _id = graphene.String(name="_id")
-    comment = graphene.Field(CommentType)
+    comment = graphene.Field(Comment)
     document_id = graphene.String()
 
     def resolve__id(self, info):
@@ -188,16 +208,16 @@ class CommentsEdit(graphene.Mutation):
     def mutate(root, info, document_id=None, set=None):
         if not set:
             return None
-        comment = Comment.objects.get(id=document_id)
+        comment = CommentModel.objects.get(id=document_id)
         if info.context.user != comment.user:
             return None
         comment.body = set.body
         comment.save()
         return CommentsEdit(comment=comment)
     
-class PostType(DjangoObjectType):
+class Post(DjangoObjectType):
     class Meta:
-        model = Post
+        model = PostModel
         description="""A post to the forum. Posts can be url posts pointing to \
         outside resources or original content hosted on the site, or both."""
     _id = graphene.String(name="_id")
@@ -208,6 +228,8 @@ class PostType(DjangoObjectType):
     word_count = graphene.Int(default_value=1,
                               description="Number of words in post body.")
     all_votes = graphene.List(VoteType, resolver=lambda x,y: [])
+    current_user_votes = graphene.List(VoteType, resolver=lambda x,y:[])
+
     meta = graphene.Boolean(
         description="""Legacy field for whether our post goes in 'meta' section, \
         may or may not exist in accordius.""")
@@ -247,7 +269,7 @@ class PostsNew(graphene.Mutation):
     class Arguments:
         document = PostsInput()
 
-    document = graphene.Field(PostType)
+    document = graphene.Field(Post)
     _id = graphene.String(name="_id")
     slug = graphene.String()
 
@@ -281,14 +303,14 @@ class PostsEdit(graphene.Mutation):
         unset = PostsUnset()
         set = PostsInput()
     
-    post = graphene.Field(PostType)
+    post = graphene.Field(Post)
     _id = graphene.String(name="_id")
     slug = graphene.String()
     @staticmethod
     def mutate(root, info, document_id=None, set=None, unset=None):
         if not set:
             return None
-        post = Post.objects.get(id=document_id)
+        post = PostModel.objects.get(id=document_id)
         if info.context.user != post.user:
             return None
         if set.title != None:
@@ -304,6 +326,40 @@ class PostsEdit(graphene.Mutation):
         post.save()
         return PostsEdit(post=post)
 
+class Voteable(graphene.Union):
+    class Meta:
+        types = (Post, Comment)
+    
+class NewVote(graphene.Mutation):
+    class Arguments:
+        document_id = graphene.String()
+        vote_type = graphene.String()
+        collection_name = graphene.String()
+
+    Output = Voteable
+        
+    @staticmethod
+    def mutate(root, info, document_id=None, vote_type=None,
+               collection_name=None):
+        if collection_name.lower() == "comments":
+            if Vote.objects.filter(document_id=document_id):
+                raise ValueError("User already voted on this")
+            comment = CommentModel.objects.get(id=document_id)
+            #TODO: Enforce valid vote types
+            vote = Vote(user=info.context.user,
+                        document_id=document_id,
+                        voted_at=datetime.today(),
+                        vote_type=vote_type)
+            if "Upvote" in vote_type:
+                comment.base_score += 1
+            elif "Downvote" in vote_type:
+                comment.base_score -= 1
+            else:
+                raise ValueError("Does not appear to be upvote or downvote!")
+            vote.save()
+            comment.save()
+            return comment
+    
 class CommentsTerms(graphene.InputObjectType):
     """Search terms for the comments_total and the comments_list."""
     limit = graphene.Int()
@@ -336,7 +392,9 @@ class Query(object):
                                   document_id=graphene.String(),
                                   name="UsersSingle")
     all_users = graphene.List(UserType)
-    posts_single = graphene.Field(PostType,
+    post = graphene.Field(Post,
+                          name="Post")
+    posts_single = graphene.Field(Post,
                                   _id=graphene.String(name="_id"),
                                   posted_at=graphene.types.datetime.DateTime(),
                                   frontpage_date = graphene.types.datetime.Date(),
@@ -344,35 +402,35 @@ class Query(object):
                                   userId = graphene.String(),
                                   document_id = graphene.String(),
                                   name="PostsSingle")
-    all_posts = graphene.List(PostType)
-    posts_list = graphene.Field(graphene.List(PostType),
+    all_posts = graphene.List(Post)
+    posts_list = graphene.Field(graphene.List(Post),
                                 terms = graphene.Argument(PostsTerms),
                                 name="PostsList")
-    posts_new = graphene.Field(PostType,
+    posts_new = graphene.Field(Post,
                                _id = graphene.String(name="_id"),
                                slug = graphene.String(),
                                name="PostsNew")
-    posts_edit = graphene.Field(PostType,
+    posts_edit = graphene.Field(Post,
                                 _id = graphene.String(name="_id"),
                                 slug = graphene.String(),
                                 name="PostsEdit")
-    comment = graphene.Field(CommentType,
+    comment = graphene.Field(Comment,
                              id=graphene.String(),
                              posted_at=graphene.types.datetime.Date(),
                              userId = graphene.Int())
-    all_comments = graphene.List(CommentType)
+    all_comments = graphene.List(Comment)
 
     comments_total = graphene.Field(graphene.types.Int,
                                     terms = graphene.Argument(CommentsTerms),
                                     name="CommentsTotal")
 
-    comments_list = graphene.Field(graphene.List(CommentType),
+    comments_list = graphene.Field(graphene.List(Comment),
                                    terms = graphene.Argument(CommentsTerms),
                                    name="CommentsList")
-    comments_new = graphene.Field(CommentType,
+    comments_new = graphene.Field(Comment,
                                   _id = graphene.String(name="_id"))
 
-    comments_edit = graphene.Field(CommentType,
+    comments_edit = graphene.Field(Comment,
                                    _id = graphene.String(name="_id"))
     
     vote = graphene.Field(VoteType,
@@ -401,39 +459,39 @@ class Query(object):
     def resolve_posts_single(self, info, **kwargs):
         id = kwargs.get('document_id')
         if id:
-            return Post.objects.get(id=id)
+            return PostModel.objects.get(id=id)
 
         return None
         
     def resolve_all_posts(self, info, **kwargs):
         #TODO: Figure out a better way to maintain compatibility here
         #...If there is one.
-        return PostType.objects.all()
+        return PostModel.objects.all()
 
     def resolve_posts_list(self, info, **kwargs):
         args = kwargs.get("terms")
         if args.user_id:
             user = User.objects.get(id=args.user_id)
-            return Post.objects.filter(user=user)
+            return PostModel.objects.filter(user=user)
         #TODO: Make this actually return the top 20 posts
-        return Post.objects.all()
+        return PostModel.objects.all()
 
     def resolve_comment(self, info, **kwargs):
         id = kwargs.get('id')
 
         if id:
-            return Post.objects.get(id=id)
+            return PostModel.objects.get(id=id)
 
         return None
 
     def resolve_all_comments(self, info, **kwargs):
-        return Comment.objects.select_related('post').all()
+        return CommentModel.objects.select_related('post').all()
 
     def resolve_comments_total(self, info, **kwargs):
         args = dict(kwargs.get('terms'))
         id = args.get('post_id')
         try:
-            return Post.objects.get(id=id).comment_count
+            return PostModel.objects.get(id=id).comment_count
         except:
             return 0
 
@@ -442,13 +500,13 @@ class Query(object):
         id = args.get('post_id')
         view = args.get('view')
         if view == 'recentComments':
-            return Comment.objects.all()
+            return CommentModel.objects.all()
             
         try:
-            document = Post.objects.get(id=id)
+            document = PostModel.objects.get(id=id)
             return document.comments.all()
         except:
-            return graphene.List(CommentType, resolver=lambda x,y: [])
+            return graphene.List(Comment, resolver=lambda x,y: [])
 
     def resolve_vote(self, info, **kwargs):
         id = kwargs.get('id')
@@ -461,6 +519,7 @@ class Query(object):
 
 class Mutations(object):
     login = Login.Field(name="Login")
+    vote = NewVote.Field(name="vote")
     posts_new = PostsNew.Field(name="PostsNew")
     posts_edit = PostsEdit.Field(name="PostsEdit")
     comments_new = CommentsNew.Field(name="CommentsNew")
