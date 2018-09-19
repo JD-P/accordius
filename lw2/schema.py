@@ -3,7 +3,6 @@ import graphene
 from graphene.types.generic import GenericScalar
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
-from django.contrib.sessions.backends.db import SessionStore
 from .models import Profile,Vote
 from .models import Post as PostModel
 from .models import Comment as CommentModel
@@ -163,7 +162,6 @@ class CommentsNew(graphene.Mutation):
     
     @staticmethod
     def mutate(root, info, document=None):
-        user = User.objects.get(id = SessionStore(session_key = info.context.META.get('HTTP_AUTHORIZATION')).get('_auth_user_id'))
         if not document:
             return
         if not user.is_authenticated:
@@ -281,7 +279,7 @@ class PostsNew(graphene.Mutation):
 
     @staticmethod
     def mutate(root, info, document=None):
-        user = User.objects.get(id = SessionStore(session_key = info.context.META.get('HTTP_AUTHORIZATION')).get('_auth_user_id'))
+        user = info.context.user
         posted_at = datetime.today()
         _id = make_id(user.username,
                       posted_at.replace(tzinfo=timezone.utc).timestamp())
