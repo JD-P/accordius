@@ -358,6 +358,10 @@ class NewVote(graphene.Mutation):
             vote.save()
             comment.save()
             return comment
+        else:
+            raise ValueError("Collection '{}' is not handled by accordius!".format(
+                collection_name))
+                
     
 class CommentsTerms(graphene.InputObjectType):
     """Search terms for the comments_total and the comments_list."""
