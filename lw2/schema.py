@@ -162,6 +162,7 @@ class CommentsNew(graphene.Mutation):
     
     @staticmethod
     def mutate(root, info, document=None):
+        user = info.context.user
         if not document:
             return
         if not user.is_authenticated:
@@ -174,7 +175,7 @@ class CommentsNew(graphene.Mutation):
         post = PostModel.objects.get(id=document.post_id)
         
         posted_at = datetime.today()
-
+        
         _id = make_id(user.username,
                       posted_at.replace(tzinfo=timezone.utc).timestamp())
         
