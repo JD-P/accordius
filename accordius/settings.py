@@ -53,6 +53,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'lw2.auth_header.AuthHeaderMiddleware',
+
 ]
 
 ROOT_URLCONF = 'accordius.urls'

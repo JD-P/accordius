@@ -286,13 +286,13 @@ class PostsNew(graphene.Mutation):
         _id = make_id(user.username,
                       posted_at.replace(tzinfo=timezone.utc).timestamp())
         slug = document.title.strip().lower().replace(" ", "-")[:60]
-        post = Post(id=_id,
-                    posted_at=posted_at,
-                    user=user,
-                    title=document.title,
-                    slug=slug,
-                    body=document.body,
-                    draft=False)
+        post = PostModel(id=_id,
+                         posted_at=posted_at,
+                         user=user,
+                         title=document.title,
+                         slug=slug,
+                         body=document.body,
+                         draft=False)
         #TODO: Is this how I'm supposed to be saving my post or is there framework magic?
         post.save()
         return PostsNew(document=post)
