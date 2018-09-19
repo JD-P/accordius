@@ -56,12 +56,11 @@ class UserType(DjangoObjectType):
         else:
             return self.username
 
-    def resolve_karm(self, info):
+    def resolve_karma(self, info):
         try:
             return self.profile_set.all()[0].karma
         except IndexError:
-            print("User {} has no profile!".format(self.username))
-            return None
+            raise ValueError("User {} has no profile!".format(self.username))
 
 class Login(graphene.Mutation):
     class Arguments:
