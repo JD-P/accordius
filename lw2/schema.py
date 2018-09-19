@@ -280,6 +280,8 @@ class PostsNew(graphene.Mutation):
     @staticmethod
     def mutate(root, info, document=None):
         user = info.context.user
+        if not user.is_authenticated:
+            raise ValueError("Your user isn't logged in")
         posted_at = datetime.today()
         _id = make_id(user.username,
                       posted_at.replace(tzinfo=timezone.utc).timestamp())
