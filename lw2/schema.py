@@ -260,6 +260,7 @@ class Post(DjangoObjectType):
 class PostsInput(graphene.InputObjectType):
     title = graphene.String()
     body = graphene.String()
+    url = graphene.String()
 
 class PostsUnset(graphene.InputObjectType):
     meta = graphene.Boolean()
@@ -296,6 +297,8 @@ class PostsNew(graphene.Mutation):
                          slug=slug,
                          body=document.body,
                          draft=False)
+        if document.url:
+            post.url = document.url
         #TODO: Is this how I'm supposed to be saving my post or is there framework magic?
         post.save()
         return PostsNew(document=post)
