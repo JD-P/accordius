@@ -125,7 +125,10 @@ class Comment(DjangoObjectType):
         return self.post.id
 
     def resolve_parent_comment_id(self, info):
-        return self.parent_comment.id
+        try:
+            return self.parent_comment.id
+        except AttributeError:
+            return None
 
     def resolve_html_body(self, info):
         return md.convert(self.body)
