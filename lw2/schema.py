@@ -365,6 +365,24 @@ class NewVote(graphene.Mutation):
             vote.save()
             comment.save()
             return comment
+        elif collection_name.lower() == "posts":
+            if Vote.objects.filter(document_id=document_id):
+                raise ValueError("User already voted on this")
+            post = PostModel.objects.get(id=document_id)
+            #TODO: Enforce valid vote types
+            vote = Vote(user=info.context.user,
+                        document_id=document_id,
+                        voted_at=datetime.today(),
+                        vote_type=vote_type)
+            if "Upvote" in vote_type:
+                post.base_score += 1
+            elif "Downvote" in vote_type:
+                post.base_score -= 1
+            else:
+                raise ValueError("Does not appear to be upvote or downvote!")
+            vote.save()
+            post.save()
+            return post
         else:
             raise ValueError("Collection '{}' is not handled by accordius!".format(
                 collection_name))
