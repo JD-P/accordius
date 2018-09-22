@@ -208,10 +208,14 @@ class CommentsEdit(graphene.Mutation):
     @staticmethod
     def mutate(root, info, document_id=None, set=None):
         if not set:
-            return None
+            raise ValueError(
+                    "You have set no changes to be made.  You must change at least one thing to save it.")
         comment = CommentModel.objects.get(id=document_id)
         if info.context.user != comment.user:
-            return None
+            raise ValueError(
+                            "WrongUserError: You are {}, but to edit this comment you need to be {}.".format(
+                                                info.context.user.username, 
+                                                comment.user.username))
         comment.body = set.body
         comment.save()
         return CommentsEdit(comment=comment)
@@ -315,10 +319,15 @@ class PostsEdit(graphene.Mutation):
     @staticmethod
     def mutate(root, info, document_id=None, set=None, unset=None):
         if not set:
-            return None
+            raise ValueError(
+                "You have set not changes to be made.  You must change at least one thing to save.")
         post = PostModel.objects.get(id=document_id)
         if info.context.user != post.user:
-            return None
+            raise ValueError(
+                            "WrongUserError: You are {}, but to edit this post you need to be {}.".format(
+                                                info.context.user.username, 
+                                                post.user.username))
+        comment.body = set.body
         if set.title != None:
             post.title = set.title
         if set.body != None:
@@ -479,7 +488,7 @@ class Query(object):
         if slug:
             return User.objects.get(username=slug)
 
-        return None
+        raise ValueError("No identifying field passed to resolver.  Please use ID, slug, etc.")
     
     def resolve_all_users(self, info, **kwargs):
         return User.objects.all()
@@ -489,7 +498,7 @@ class Query(object):
         if id:
             return PostModel.objects.get(id=id)
 
-        return None
+        raise ValueError("No post with ID '{}' found.".format(id))
         
     def resolve_all_posts(self, info, **kwargs):
         #TODO: Figure out a better way to maintain compatibility here
@@ -510,7 +519,7 @@ class Query(object):
         if id:
             return PostModel.objects.get(id=id)
 
-        return None
+        raise ValueError("No comment with ID '{}' found.".format(id))
 
     def resolve_all_comments(self, info, **kwargs):
         return CommentModel.objects.select_related('post').all()
@@ -542,8 +551,7 @@ class Query(object):
         if id:
             return Vote.objects.get(id=id)
 
-        return None
-        
+        raise ValueError("No vote found for ID '{}'.".format(id))        
 
 class Mutations(object):
     login = Login.Field(name="Login")
