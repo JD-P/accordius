@@ -320,7 +320,8 @@ class PostsEdit(graphene.Mutation):
     def mutate(root, info, document_id=None, set=None, unset=None):
         if not set:
             raise ValueError(
-                "You have set not changes to be made.  You must change at least one thing to save.")
+                "Your set has no changes to be made.  " +
+                "You must change at least one thing to save.")
         post = PostModel.objects.get(id=document_id)
         if info.context.user != post.user:
             raise ValueError(
@@ -370,7 +371,10 @@ class NewVote(graphene.Mutation):
             elif "Downvote" in vote_type:
                 comment.base_score -= 1
             else:
-                raise ValueError("Does not appear to be upvote or downvote!")
+                raise ValueError(
+                    "'{}' does not appear to be upvote or downvote".format(
+                        vote_type)
+                )
             vote.save()
             comment.save()
             return comment
@@ -388,7 +392,10 @@ class NewVote(graphene.Mutation):
             elif "Downvote" in vote_type:
                 post.base_score -= 1
             else:
-                raise ValueError("Does not appear to be upvote or downvote!")
+                raise ValueError(
+                    "'{}' does not appear to be upvote or downvote".format(
+                        vote_type)
+                )
             vote.save()
             post.save()
             return post
