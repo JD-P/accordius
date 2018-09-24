@@ -28,6 +28,8 @@ class Post(models.Model):
     - comment_count: The number of comments on the post.
     - view_count: How many views the post has gotten since it was published.
     - draft: Whether the post is a draft or not."""
+    class Meta:
+        ordering = ['-posted_at']
     id = models.CharField(primary_key=True, max_length=17)
     posted_at = models.DateTimeField(default=datetime.today)
     frontpage_date = models.DateTimeField(null=True, default=None)
@@ -81,3 +83,30 @@ class Vote(models.Model):
     voted_at = models.DateTimeField(default=datetime.today)
     vote_type = models.CharField(default="smallUpvote", max_length=25)
     power = models.IntegerField(default=1)
+
+class Notification(models.Model):
+    class Meta:
+        ordering = ['-created_at']
+    user = models.ForeignKey(User, related_name="notifications",
+                             on_delete=models.CASCADE)
+    created_at = models.DateTimeField(default=datetime.today)
+    document_id = models.CharField(max_length=17)
+    document_type = models.CharField(max_length=50)
+    type = models.CharField(max_length=50)
+    message = models.TextField()
+    viewed = models.BooleanField(default=False)
+    
+class Conversation(models.Model):
+    created_at = models.DateTimeField(default=datetime.today)
+    title = models.CharField(max_length=150)
+    
+
+class Message(models.Model):
+    user = models.ForeignKey(User, related_name="participants",
+                             null=True, on_delete=models.SET_NULL)
+    conversation = models.ForeignKey(Conversation, related_name="messages",
+                                     on_delete=models.CASCADE)
+    created_at = models.DateTimeField(default=datetime.today)
+    content = models.TextField()
+    
+    

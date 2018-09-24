@@ -3,7 +3,7 @@ import graphene
 from graphene.types.generic import GenericScalar
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
-from .models import Profile,Vote
+from .models import Profile,Vote, Notification
 from .models import Post as PostModel
 from .models import Comment as CommentModel
 from datetime import datetime, timezone
@@ -38,6 +38,7 @@ class UserType(DjangoObjectType):
     slug = graphene.String()
     display_name = graphene.String()
     karma = graphene.Int()
+    last_notifications_check = graphene.types.datetime.Date()
 
     def resolve__id(self, info):
         return self.id
@@ -61,6 +62,9 @@ class UserType(DjangoObjectType):
             return self.profile_set.all()[0].karma
         except IndexError:
             raise ValueError("User {} has no profile!".format(self.username))
+
+    def resolve_last_notifications_check(self, info):
+        return None
 
 class Login(graphene.Mutation):
     class Arguments:
@@ -413,6 +417,7 @@ class CommentsTerms(graphene.InputObjectType):
 class PostsTerms(graphene.InputObjectType):
     """Search terms for the posts_list."""
     limit = graphene.Int()
+    offset = graphene.Int()
     post_id = graphene.String()
     user_id = graphene.Int()
     view = graphene.String()
@@ -420,6 +425,17 @@ class PostsTerms(graphene.InputObjectType):
     # Should be boolean, but sometimes presents as null so generic required 
     meta = graphene.Boolean()
 
+class NotificationsTerms(graphene.InputObjectType):
+    """Search terms for the notifications."""
+    limit = graphene.Int()
+    user_id = graphene.String()
+    view = graphene.String()
+    
+class NotificationType(DjangoObjectType):
+    class Meta:
+        model = Notification
+    
+    
 class APIDescriptions(object):
     """The description texts for the various entries in the API. Because these are 
     long they're being put in a separate container class for formatting sake."""
@@ -480,7 +496,11 @@ class Query(object):
     vote = graphene.Field(VoteType,
                           id=graphene.Int())
 
-    all_votes = graphene.List(VoteType)        
+    all_votes = graphene.List(VoteType)
+
+    notifications_list = graphene.Field(graphene.List(NotificationType),
+                                        terms = graphene.Argument(NotificationsTerms),
+                                        name="NotificationsList")
     
     def resolve_users_single(self, info, **kwargs):
         id = kwargs.get('id')
@@ -517,7 +537,10 @@ class Query(object):
         if args.user_id:
             user = User.objects.get(id=args.user_id)
             return PostModel.objects.filter(user=user)
-        #TODO: Make this actually return the top 20 posts
+        if args.limit and args.offset:
+            return PostModel.objects.all()[args.offset:args.offset + args.limit]
+        elif args.limit:
+            return PostModel.objects.all()[:args.limit]
         return PostModel.objects.all()
 
     def resolve_comment(self, info, **kwargs):
@@ -558,7 +581,21 @@ class Query(object):
         if id:
             return Vote.objects.get(id=id)
 
-        raise ValueError("No vote found for ID '{}'.".format(id))        
+        raise ValueError("No vote found for ID '{}'.".format(id))
+
+    def resolve_notifications_list(self, info, **kwargs):
+        args = kwargs["terms"]
+        if not args.user_id:
+            raise ValueError(
+                "No user with ID '{}' found".format(info.context.user.id)
+            )
+        if args.view == "userNotifications":
+            user = User.objects.get(id=args.user_id)
+            #TODO: Implement offset
+            if args.limit:
+                return Notification.objects.filter(user=user)[:args.limit]
+            else:
+                return Notification.objects.filter(user=user)
 
 class Mutations(object):
     login = Login.Field(name="Login")
