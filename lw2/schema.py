@@ -34,14 +34,14 @@ class UserType(DjangoObjectType):
                        'posts','comments','slug',
                        'displayName','karma'}
         
-    _id = graphene.Int(name="_id")
+    _id = graphene.String(name="_id")
     slug = graphene.String()
     display_name = graphene.String()
     karma = graphene.Int()
     last_notifications_check = graphene.types.datetime.Date()
 
     def resolve__id(self, info):
-        return self.id
+        return str(self.id)
     
     def resolve_slug(self, info):
         return self.username
@@ -96,7 +96,7 @@ class VoteType(DjangoObjectType):
     _id = graphene.Int(name="_id")
 
     def resolve__id(self, info):
-        return self.id
+        return str(self.id)
         
         
 class Comment(DjangoObjectType):
@@ -428,12 +428,29 @@ class PostsTerms(graphene.InputObjectType):
 class NotificationsTerms(graphene.InputObjectType):
     """Search terms for the notifications."""
     limit = graphene.Int()
+    offset = graphene.Int()
     user_id = graphene.String()
     view = graphene.String()
     
 class NotificationType(DjangoObjectType):
     class Meta:
         model = Notification
+
+    _id = graphene.String(name="_id")
+    title = graphene.String()
+    link = graphene.String()
+
+    def resolve__id(self, info):
+        return str(self.id)
+
+    def resolve_title(self, info):
+        # Just do a dummy resolver for now
+        return "Test title"
+    
+    def resolve_link(self, info):
+        # Just do a dummy resolver for now
+        return None
+        
     
     
 class APIDescriptions(object):
@@ -508,8 +525,10 @@ class Query(object):
         slug = kwargs.get('slug')
 
         if id:
+            id = int(id)
             return User.objects.get(id=id)
         if document_id:
+            document_id = int(document_id)
             # Mongodb uses this field for uid lookups, we do it for compatibility
             return User.objects.get(id=document_id)
         if slug:
