@@ -88,7 +88,6 @@ class UsersEdit(graphene.Mutation):
                     user.username,
                     info.context.user.username)
                 )
-        pdb.set_trace()
         try:
             profile = Profile.objects.get(user=user)
         except Profile.DoesNotExist:
