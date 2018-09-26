@@ -100,10 +100,15 @@ class Notification(models.Model):
 class Conversation(models.Model):
     created_at = models.DateTimeField(default=datetime.today)
     title = models.CharField(max_length=150)
-    
 
+class Participant(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    conversation = models.ForeignKey(Conversation,
+                                     related_name="participants",
+                                     on_delete=models.CASCADE)
+    
 class Message(models.Model):
-    user = models.ForeignKey(User, related_name="participants",
+    user = models.ForeignKey(User,
                              null=True, on_delete=models.SET_NULL)
     conversation = models.ForeignKey(Conversation, related_name="messages",
                                      on_delete=models.CASCADE)

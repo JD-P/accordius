@@ -3,7 +3,7 @@ import graphene
 from graphene.types.generic import GenericScalar
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
-from .models import Profile,Vote, Notification
+from .models import Profile,Vote, Notification, Conversation, Participant
 from .models import Post as PostModel
 from .models import Comment as CommentModel
 from datetime import datetime, timezone
@@ -484,8 +484,43 @@ class NotificationType(DjangoObjectType):
     def resolve_link(self, info):
         # Just do a dummy resolver for now
         return None
-        
+
+class ConversationsInput(graphene.InputObjectType):
+    participant_ids = graphene.List(graphene.String)
+    title = graphene.String()
     
+class ConversationType(DjangoObjectType):
+    class Meta:
+        model = Conversation
+
+    _id = graphene.String(name="_id")
+
+    def resolve__id(self, info):
+        return str(self.id)
+
+class ConversationsNew(graphene.Mutation):
+    class Arguments:
+        document = ConversationsInput()
+
+    _id = graphene.String(name="_id")
+        
+    @staticmethod
+    def mutate(root, info, document=None):
+        if not document:
+            raise ValueError(
+                "No conversation variables were passed, got '{}' instead.".format(
+                    repr(document)
+                    )
+            )
+        convo = Conversation(title=document.title)
+        convo.save()
+        #TODO: Delete convo if we get error here
+        for participant_id in document.participant_ids:
+            user = User.objects.get(id=int(participant_id))
+            participant = Participant(user=user,
+                                      conversation=convo)
+            participant.save()
+        return ConversationsNew(_id=convo.id)
     
 class APIDescriptions(object):
     """The description texts for the various entries in the API. Because these are 
@@ -658,6 +693,6 @@ class Mutations(object):
     posts_edit = PostsEdit.Field(name="PostsEdit")
     comments_new = CommentsNew.Field(name="CommentsNew")
     comments_edit = CommentsEdit.Field(name="CommentsEdit")
-
+    conversations_new = ConversationsNew.Field(name="ConversationsNew")
 
 
