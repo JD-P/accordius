@@ -64,8 +64,43 @@ class UserType(DjangoObjectType):
             raise ValueError("User {} has no profile!".format(self.username))
 
     def resolve_last_notifications_check(self, info):
-        return None
+        try:
+            return self.profile_set.all()[0].last_notifications_check
+        except IndexError:
+            raise ValueError("User {} has no profile!".format(self.username))
 
+class UsersInput(graphene.InputObjectType):
+    last_notifications_check = graphene.types.datetime.DateTime()
+
+class UsersEdit(graphene.Mutation):
+    class Arguments:
+        document_id = graphene.String()
+        set = UsersInput()
+
+    _id = graphene.String(name="_id")
+        
+    @staticmethod
+    def mutate(root, info, document_id=None, set=None):
+        user = User.objects.get(id=document_id)
+        if not (user == info.context.user and info.context.user.is_authenticated):
+            raise ValueError(
+                "Trying to change properties of user {} but logged in as {}".format(
+                    user.username,
+                    info.context.user.username)
+                )
+        pdb.set_trace()
+        try:
+            profile = Profile.objects.get(user=user)
+        except Profile.DoesNotExist:
+            profile = Profile(user=user)
+                              
+        if set.last_notifications_check:
+            profile.last_notifications_check = set.last_notifications_check
+
+        profile.save()
+        return UsersEdit(_id=str(user.id))
+        
+               
 class Login(graphene.Mutation):
     class Arguments:
         username = graphene.String()
@@ -617,6 +652,7 @@ class Query(object):
                 return Notification.objects.filter(user=user)
 
 class Mutations(object):
+    users_edit = UsersEdit.Field(name="usersEdit")
     login = Login.Field(name="Login")
     vote = NewVote.Field(name="vote")
     posts_new = PostsNew.Field(name="PostsNew")

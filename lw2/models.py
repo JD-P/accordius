@@ -9,6 +9,7 @@ class Profile(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     display_name = models.CharField(null=True, max_length=40)
     karma = models.IntegerField(default=1)
+    last_notifications_check = models.DateTimeField(default=datetime.today)
 
 class Post(models.Model):
     """A post object.
