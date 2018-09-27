@@ -49,7 +49,7 @@ class UserType(DjangoObjectType):
 
     def resolve_display_name(self, info):
         try:
-            display_name = self.profile_set.all()[0].display_name
+            display_name = self.profile.all()[0].display_name
         except IndexError:
             print("User {} has no profile!".format(self.username))
             display_name = self.username
@@ -60,13 +60,13 @@ class UserType(DjangoObjectType):
 
     def resolve_karma(self, info):
         try:
-            return self.profile_set.all()[0].karma
+            return self.profile.all()[0].karma
         except IndexError:
             raise ValueError("User {} has no profile!".format(self.username))
 
     def resolve_last_notifications_check(self, info):
         try:
-            return self.profile_set.all()[0].last_notifications_check
+            return self.profile.all()[0].last_notifications_check
         except IndexError:
             raise ValueError("User {} has no profile!".format(self.username))
 
@@ -447,6 +447,7 @@ class CommentsTerms(graphene.InputObjectType):
     """Search terms for the comments_total and the comments_list."""
     limit = graphene.Int()
     post_id = graphene.String()
+    user_id = graphene.String()
     view = graphene.String()
 
 class PostsTerms(graphene.InputObjectType):
@@ -454,17 +455,21 @@ class PostsTerms(graphene.InputObjectType):
     limit = graphene.Int()
     offset = graphene.Int()
     post_id = graphene.String()
-    user_id = graphene.Int()
+    user_id = graphene.String()
     view = graphene.String()
     # Legacy field for LW 2 compatibility
     # Should be boolean, but sometimes presents as null so generic required 
     meta = graphene.Boolean()
-
+    
 class NotificationsTerms(graphene.InputObjectType):
     """Search terms for the notifications."""
     limit = graphene.Int()
     offset = graphene.Int()
     user_id = graphene.String()
+    view = graphene.String()
+
+class MessagesTerms(graphene.InputObjectType):
+    conversation_id = graphene.String()
     view = graphene.String()
     
 class NotificationType(DjangoObjectType):
@@ -486,6 +491,22 @@ class NotificationType(DjangoObjectType):
         # Just do a dummy resolver for now
         return None
 
+class ParticipantType(DjangoObjectType):
+    class Meta:
+        model = Participant
+
+    display_name = graphene.String()
+    slug = graphene.String()
+
+    def resolve_display_name(self, info):
+        display_name = self.user.profile.get(user=self.user).display_name
+        if display_name:
+            return display_name
+        else:
+            return self.user.username
+    def resolve_slug(self, info):
+        return self.user.username
+    
 class ConversationsInput(graphene.InputObjectType):
     participant_ids = graphene.List(graphene.String)
     title = graphene.String()
@@ -495,10 +516,14 @@ class ConversationType(DjangoObjectType):
         model = Conversation
 
     _id = graphene.String(name="_id")
-
+    participants = graphene.List(ParticipantType)
+    
     def resolve__id(self, info):
         return str(self.id)
 
+    def resolve_participants(self, info):
+        return self.participants.all()
+    
 class ConversationsNew(graphene.Mutation):
     class Arguments:
         document = ConversationsInput()
@@ -522,7 +547,7 @@ class ConversationsNew(graphene.Mutation):
                                       conversation=convo)
             participant.save()
         return ConversationsNew(_id=convo.id)
-
+    
 class MessagesBlocks(graphene.InputObjectType):
     text = graphene.String()
     type = graphene.String()
@@ -543,6 +568,7 @@ class MessageType(DjangoObjectType):
         model = Message
 
     _id = graphene.String(name="_id")
+    user_id = graphene.String()
 
     def resolve__id(self, info):
         return str(self.id)
@@ -638,6 +664,12 @@ class Query(object):
     notifications_list = graphene.Field(graphene.List(NotificationType),
                                         terms = graphene.Argument(NotificationsTerms),
                                         name="NotificationsList")
+    conversations_single = graphene.Field(ConversationType,
+                                          document_id = graphene.String(),
+                                          name="ConversationsSingle")
+    messages_list = graphene.Field(graphene.List(MessageType),
+                                   terms = graphene.Argument(MessagesTerms),
+                                   name="MessagesList")
     
     def resolve_users_single(self, info, **kwargs):
         id = kwargs.get('id')
@@ -707,7 +739,9 @@ class Query(object):
         view = args.get('view')
         if view == 'recentComments':
             return CommentModel.objects.all()
-            
+        if view == 'allRecentComments' and args["user_id"]:
+            user = User.objects.get(id=int(args["user_id"]))
+            return CommentModel.objects.filter(user=user)
         try:
             document = PostModel.objects.get(id=id)
             return document.comments.all()
@@ -735,6 +769,21 @@ class Query(object):
                 return Notification.objects.filter(user=user)[:args.limit]
             else:
                 return Notification.objects.filter(user=user)
+
+    def resolve_conversations_single(self, info, **kwargs):
+        document_id = kwargs["document_id"]
+        if document_id:
+            return Conversation.objects.get(id=int(document_id))
+        else:
+            raise ValueError("Expected document id, instead got '{}'".format(
+                repr(document_id)
+                )
+            )
+
+    def resolve_messages_list(self, info, **kwargs):
+        convo_id = kwargs["terms"].conversation_id
+        return Conversation.objects.get(id=int(convo_id)).messages.all()
+    
 
 class Mutations(object):
     users_edit = UsersEdit.Field(name="usersEdit")
