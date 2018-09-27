@@ -561,9 +561,13 @@ class MessageType(DjangoObjectType):
 
     _id = graphene.String(name="_id")
     user_id = graphene.String()
-
+    html_body = graphene.String()
+    
     def resolve__id(self, info):
         return str(self.id)
+ 
+    def user_id(self, info):
+        return str(self.user.id)
 
     def resolve_html_body(self, info):
         return md.convert(self.body)
@@ -776,6 +780,8 @@ class Query(object):
             )
 
     def resolve_messages_list(self, info, **kwargs):
+        #if not info.context.user.is_authenticated:
+        #    raise ValueError("Need to be logged in to read private messages!")
         convo_id = kwargs["terms"].conversation_id
         return Conversation.objects.get(id=int(convo_id)).messages.all()
     
