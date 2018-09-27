@@ -4,6 +4,7 @@ from graphene.types.generic import GenericScalar
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
 from .models import Profile,Vote, Notification, Conversation, Participant
+from .models import Message
 from .models import Post as PostModel
 from .models import Comment as CommentModel
 from datetime import datetime, timezone
@@ -521,6 +522,56 @@ class ConversationsNew(graphene.Mutation):
                                       conversation=convo)
             participant.save()
         return ConversationsNew(_id=convo.id)
+
+class MessagesBlocks(graphene.InputObjectType):
+    text = graphene.String()
+    type = graphene.String()
+
+class MessagesEntityMap(graphene.InputObjectType):
+    placeholder = graphene.String()
+    
+class MessagesContent(graphene.InputObjectType):
+    blocks = graphene.List(MessagesBlocks)
+    entity_map = MessagesEntityMap()
+    
+class MessagesInput(graphene.InputObjectType):
+    conversation_id = graphene.String()
+    content = MessagesContent()
+
+class MessageType(DjangoObjectType):
+    class Meta:
+        model = Message
+
+    _id = graphene.String(name="_id")
+
+    def resolve__id(self, info):
+        return str(self.id)
+
+class MessagesNew(graphene.Mutation):
+    class Arguments:
+        document = MessagesInput()
+
+    _id = graphene.String(name="_id")
+
+    @staticmethod
+    def mutate(root, info, document=None):
+        if not document:
+            raise ValueError(
+                "No conversation variables were passed, got '{}' instead.".format(
+                    repr(document)
+                    )
+            )
+        if not info.context.user.is_authenticated:
+            raise ValueError("You need to be logged in to send private messages")
+        
+        conversation = Conversation.objects.get(id=int(document.conversation_id))
+        message_text = md.convert(document.content.blocks[0].text)
+        message = Message(user=info.context.user,
+                          conversation=conversation,
+                          content=message_text)
+        message.save()
+        return MessagesNew(_id=message.id)
+        
     
 class APIDescriptions(object):
     """The description texts for the various entries in the API. Because these are 
@@ -694,5 +745,5 @@ class Mutations(object):
     comments_new = CommentsNew.Field(name="CommentsNew")
     comments_edit = CommentsEdit.Field(name="CommentsEdit")
     conversations_new = ConversationsNew.Field(name="ConversationsNew")
-
+    messages_new = MessagesNew.Field(name="MessagesNew")
 
