@@ -113,6 +113,6 @@ class Message(models.Model):
     conversation = models.ForeignKey(Conversation, related_name="messages",
                                      on_delete=models.CASCADE)
     created_at = models.DateTimeField(default=datetime.today)
-    content = models.TextField()
+    body = models.TextField()
     
     

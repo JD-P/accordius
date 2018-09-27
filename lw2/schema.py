@@ -548,16 +548,8 @@ class ConversationsNew(graphene.Mutation):
             participant.save()
         return ConversationsNew(_id=convo.id)
     
-class MessagesBlocks(graphene.InputObjectType):
-    text = graphene.String()
-    type = graphene.String()
-
-class MessagesEntityMap(graphene.InputObjectType):
-    placeholder = graphene.String()
-    
 class MessagesContent(graphene.InputObjectType):
-    blocks = graphene.List(MessagesBlocks)
-    entity_map = MessagesEntityMap()
+    body = graphene.String()
     
 class MessagesInput(graphene.InputObjectType):
     conversation_id = graphene.String()
@@ -572,6 +564,9 @@ class MessageType(DjangoObjectType):
 
     def resolve__id(self, info):
         return str(self.id)
+
+    def resolve_html_body(self, info):
+        return md.convert(self.body)
 
 class MessagesNew(graphene.Mutation):
     class Arguments:
@@ -591,7 +586,7 @@ class MessagesNew(graphene.Mutation):
             raise ValueError("You need to be logged in to send private messages")
         
         conversation = Conversation.objects.get(id=int(document.conversation_id))
-        message_text = md.convert(document.content.blocks[0].text)
+        message_text = document.content.body
         message = Message(user=info.context.user,
                           conversation=conversation,
                           content=message_text)
