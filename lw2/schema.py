@@ -4,7 +4,7 @@ from graphene.types.generic import GenericScalar
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
 from .models import Profile,Vote, Notification, Conversation, Participant
-from .models import Message
+from .models import Message as MessageModel
 from .models import Post as PostModel
 from .models import Comment as CommentModel
 from datetime import datetime, timezone
@@ -548,27 +548,28 @@ class ConversationsNew(graphene.Mutation):
             participant.save()
         return ConversationsNew(_id=convo.id)
     
-class MessagesContent(graphene.InputObjectType):
-    body = graphene.String()
-    
 class MessagesInput(graphene.InputObjectType):
     conversation_id = graphene.String()
-    content = MessagesContent()
+    body = graphene.String()
 
-class MessageType(DjangoObjectType):
+class Message(DjangoObjectType):
     class Meta:
-        model = Message
+        model = MessageModel
 
     _id = graphene.String(name="_id")
     user_id = graphene.String()
     html_body = graphene.String()
+    posted_at = graphene.types.datetime.DateTime()
     
     def resolve__id(self, info):
         return str(self.id)
- 
-    def user_id(self, info):
+    
+    def resolve_user_id(self, info):
         return str(self.user.id)
 
+    def resolve_posted_at(self, info):
+        return self.created_at
+    
     def resolve_html_body(self, info):
         return md.convert(self.body)
 
@@ -590,10 +591,10 @@ class MessagesNew(graphene.Mutation):
             raise ValueError("You need to be logged in to send private messages")
         
         conversation = Conversation.objects.get(id=int(document.conversation_id))
-        message_text = document.content.body
-        message = Message(user=info.context.user,
-                          conversation=conversation,
-                          content=message_text)
+        message_text = document.body
+        message = MessageModel(user=info.context.user,
+                               conversation=conversation,
+                               body=message_text)
         message.save()
         return MessagesNew(_id=message.id)
         
@@ -666,7 +667,7 @@ class Query(object):
     conversations_single = graphene.Field(ConversationType,
                                           document_id = graphene.String(),
                                           name="ConversationsSingle")
-    messages_list = graphene.Field(graphene.List(MessageType),
+    messages_list = graphene.Field(graphene.List(Message),
                                    terms = graphene.Argument(MessagesTerms),
                                    name="MessagesList")
     
