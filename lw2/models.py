@@ -72,6 +72,25 @@ class Comment(models.Model):
     body = models.TextField()
     is_deleted = models.BooleanField(default=False)
 
+class Tag(models.Model):
+    """A tag on a post, comment, or other taggable item.
+
+    - user: The user object that made the tag.
+    - document_id: The id of the media that was tagged.
+    - type: The type of media that was tagged.
+    - created_at: The date on which the tag was made.
+    - text: The tag text, which is case sensitive on storage but searched casei
+    """
+    user = models.ForeignKey(User, related_name="tags",
+                             null=True, on_delete=models.SET_NULL)
+    document_id = models.CharField(max_length=17)
+    # Not an arbitrary limit, think about using type strings in code
+    # They need to be able to fit onto a line with other code on it.
+    type = models.CharField(max_length=40)
+    created_at = models.DateTimeField(default=datetime.today)
+    # Length-Limited by views
+    text = models.TextField()
+    
 class Vote(models.Model):
     """A vote on a post, comment, or other votable item.
 
