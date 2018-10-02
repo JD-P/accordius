@@ -89,7 +89,7 @@ class Tag(models.Model):
     type = models.CharField(max_length=40)
     created_at = models.DateTimeField(default=datetime.today)
     # Length-Limited by views
-    text = models.TextField()
+    text = models.TextField(unique=True)
     
 class Vote(models.Model):
     """A vote on a post, comment, or other votable item.

@@ -1,5 +1,0 @@
-from django.contrib.auth.models import User
-
-class AuthHeaderMiddleware(object):
-    def process_request(request):
-        request.user = User.objects.get(id = SessionStore(session_key = info.context.META.get('HTTP_AUTHORIZATION')).get('_auth_user_id'))

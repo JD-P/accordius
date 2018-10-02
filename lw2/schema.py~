@@ -1,7 +1,0 @@
-from graphene_django import DjangoObjectType
-import graphene
-from . import views
-
-class Test(DjangoObjectType):
-    class Meta:
-        model = 

@@ -1,8 +1,17 @@
-from django.conf.urls import url
+from django.conf.urls import url, include
 from django.views.decorators.csrf import csrf_exempt
 from graphene_django.views import GraphQLView
+from rest_framework import routers
+from lw2.models import Tag
+from lw2 import views
+
+router = routers.DefaultRouter()
+router.register(r'users', views.UserViewSet)
+router.register(r'tags', views.TagViewSet)
 
 urlpatterns = [
     url(r'^graphql', csrf_exempt(GraphQLView.as_view())),
     url(r'^graphiql', csrf_exempt(GraphQLView.as_view(graphiql=True))),
+    url(r'^', include(router.urls)),
+    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 ]
