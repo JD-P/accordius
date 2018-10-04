@@ -15,7 +15,10 @@ import base64
 import pdb
 
 bleach = BleachExtension()
-md = markdown.Markdown(extensions=[bleach])
+md = markdown.Markdown(extensions=[bleach,
+                                   'toc',
+                                   'meta',
+                                   'def_list'])
 
 def make_id(username, utc_timestamp):
     hashable = username + str(utc_timestamp)
@@ -367,7 +370,7 @@ class PostsEdit(graphene.Mutation):
                             "WrongUserError: You are {}, but to edit this post you need to be {}.".format(
                                                 info.context.user.username, 
                                                 post.user.username))
-        comment.body = set.body
+        post.body = set.body
         if set.title != None:
             post.title = set.title
         if set.body != None:
