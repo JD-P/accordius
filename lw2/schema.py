@@ -10,11 +10,14 @@ from .models import Comment as CommentModel
 from datetime import datetime, timezone
 import markdown
 from mdx_bleach.extension import BleachExtension
+from mdx_bleach.whitelist import ALLOWED_TAGS, ALLOWED_ATTRIBUTES
 import hashlib
 import base64
 import pdb
 
-bleach = BleachExtension()
+tags = ALLOWED_TAGS + ["div", "dl", "dt", "dd"]
+ALLOWED_ATTRIBUTES.update({"div":['class="toc"']})
+bleach = BleachExtension(tags=tags, )
 md = markdown.Markdown(extensions=[bleach,
                                    'toc',
                                    'meta',
