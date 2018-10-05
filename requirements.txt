@@ -9,6 +9,8 @@ graphql-core==2.1
 graphql-relay==0.4.5
 html5lib==1.0.1
 Markdown==2.6.11
+MarkdownSubscript==2.0.0
+MarkdownSuperscript==2.0.0
 mdx-bleach==0.1.4
 promise==2.1
 pytz==2018.5
