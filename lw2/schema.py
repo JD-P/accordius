@@ -15,7 +15,7 @@ import hashlib
 import base64
 import pdb
 
-tags = ALLOWED_TAGS + ["div", "dl", "dt", "dd", "sup", "sub"]
+tags = ALLOWED_TAGS + ["div", "i", "dl", "dt", "dd", "sup", "sub"]
 ALLOWED_ATTRIBUTES.update({"div":['class="toc"']})
 bleach = BleachExtension(tags=tags, )
 md = markdown.Markdown(extensions=[bleach,
@@ -23,7 +23,8 @@ md = markdown.Markdown(extensions=[bleach,
                                    'meta',
                                    'def_list',
                                    'superscript',
-                                   'subscript'])
+                                   'subscript',
+                                   'mdx_linkify'])
 
 def make_id(username, utc_timestamp):
     hashable = username + str(utc_timestamp)
