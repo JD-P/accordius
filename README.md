@@ -33,6 +33,8 @@ Run the server:
 
 `./manage.py runserver`
 
+## Options
+
 If you'd like to run the server on a different port you can use the ipaddress:port syntax like so:
 
 `./manage.py runserver 127.0.0.1:9000`
