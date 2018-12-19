@@ -1,5 +1,5 @@
 from django.contrib.auth.models import User
-from lw2.models import Tag
+from lw2.models import *
 from rest_framework import serializers
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
@@ -11,3 +11,8 @@ class TagSerializer(serializers.HyperlinkedModelSerializer):
         model = Tag
         fields = ('user','document_id','created_at','type','text')
 
+class BanSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Ban
+        fields = ('user', 'created_at', 'reason',
+                  'ban_message', 'until', 'appeal_on')

@@ -10,6 +10,7 @@ class Profile(models.Model):
     display_name = models.CharField(null=True, max_length=40)
     karma = models.IntegerField(default=1)
     last_notifications_check = models.DateTimeField(default=datetime.today)
+    moderator = models.BooleanField(default=False)
 
 class Post(models.Model):
     """A post object.
@@ -134,4 +135,20 @@ class Message(models.Model):
     created_at = models.DateTimeField(default=datetime.today)
     body = models.TextField()
     
-    
+class Ban(models.Model):
+    """This is referred to as a 'disinvite' in the interface. Defines a ban on
+    a user.
+
+    - user: The user that has been banned
+    - created_at: The date and time of the ban
+    - reason: The reason for the ban, as displayed in mod log
+    - ban_message: The message displayed to the ban user when they try to log in
+    - until: On what date they are considered unbanned
+    - appeal_on: On what date the user is allowed to send a message to mods 
+    appealing their ban"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(default=datetime.today)
+    reason = models.CharField(max_length=2048)
+    ban_message = models.CharField(max_length=2048)
+    until = models.DateTimeField()
+    appeal_on = models.DateTimeField()
