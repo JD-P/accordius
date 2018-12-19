@@ -20,7 +20,10 @@ Install dependencies with pip:
 
 `pip install -r requirements.txt `
 
-Make and apply vigrations:
+## Running The Server
+You should do this each time you update from upstream and want to run the server
+
+Make and apply migrations:
 
 `./manage.py makemigrations`
 
@@ -29,3 +32,15 @@ Make and apply vigrations:
 Run the server:
 
 `./manage.py runserver`
+
+## Options
+
+If you'd like to run the server on a different port you can use the ipaddress:port syntax like so:
+
+`./manage.py runserver 127.0.0.1:9000`
+
+For more information see:
+
+`./manage.py help runserver`
+
+And the settings reference in the Django documentation: https://docs.djangoproject.com/en/2.1/ref/settings/
