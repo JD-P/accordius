@@ -8,6 +8,7 @@ from lw2 import views
 router = routers.DefaultRouter()
 router.register(r'users', views.UserViewSet)
 router.register(r'tags', views.TagViewSet)
+router.register(r'bans', views.BanViewSet)
 
 urlpatterns = [
     url(r'^graphql', csrf_exempt(GraphQLView.as_view())),
