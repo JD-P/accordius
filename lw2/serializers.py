@@ -22,6 +22,8 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
         tzinfo = datetime.timezone(-datetime.timedelta(hours=8))
         if invite.expires < datetime.datetime.now(tz=tzinfo):
             raise ValueError("This invite has expired.")
+        if invite.used_by:
+            raise ValueError("This invite has been used.")
         #TODO: Filter out characters which aren't ascii, or something
         #TODO: Force users not to use stupid weak passwords
         new_user = User.objects.create_user(validated_data.pop('username'),
