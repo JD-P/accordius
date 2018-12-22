@@ -152,3 +152,27 @@ class Ban(models.Model):
     ban_message = models.CharField(max_length=2048)
     until = models.DateTimeField()
     appeal_on = models.DateTimeField()
+
+class Invite(models.Model):
+    """An invitation to join the forum.
+
+    - creator: The user that created the invite.
+    - code: The string which has to be used on signup to accept the invite.
+    - date_created: The date on which the invitation was created.
+    - used_date: The date on which the invitation was accepted, if accepted.
+    - used_by: The account which used this invite to sign up.
+    - expires: The date-time at which this invite can no longer be used."""
+    creator = models.ForeignKey(User, on_delete=models.PROTECT, related_name="invites")
+    code = models.CharField(max_length=25)
+    date_created = models.DateTimeField(default=datetime.today)
+    used_date = models.DateTimeField(default=None, null=True)
+    used_by = models.ForeignKey(User, on_delete=models.PROTECT, null=True, related_name="signup")
+    expires = models.DateTimeField()
+    
+class InviteTreeNode(models.Model):
+    """A node in the invitation lineage tree.
+
+    parent - The account which made the invite.
+    child - The account which accepted it."""
+    parent = models.ForeignKey(User, on_delete=models.PROTECT, related_name="inv_parent")
+    child = models.ForeignKey(User, on_delete=models.PROTECT, related_name="inv_children")

@@ -1,6 +1,7 @@
 from django.shortcuts import render
-from rest_framework import viewsets, filters
+from rest_framework import viewsets, filters, generics
 from rest_framework.permissions import DjangoModelPermissions
+from rest_framework.permissions import IsAuthenticated
 from lw2.models import *
 from lw2.serializers import *
 # Create your views here.
@@ -27,3 +28,23 @@ class BanViewSet(viewsets.ModelViewSet):
     permission_classes = (DjangoModelPermissions,)
     queryset = Ban.objects.all()
     serializer_class = BanSerializer
+
+class InviteViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows invites to be created or viewed.
+    """
+    permission_classes = (IsAuthenticated,)
+    queryset = Invite.objects.all()
+    serializer_class = InviteSerializer
+
+class InviteList(generics.ListAPIView):
+    """
+    API endpoint that lets a user get a list of their created invite codes.
+    """
+    serializer_class = RestrictedInviteSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.is_authenticated:
+            return Invite.objects.filter(creator=user)
+    
