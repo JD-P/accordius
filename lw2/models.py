@@ -71,6 +71,7 @@ class Comment(models.Model):
     posted_at = models.DateTimeField(default=datetime.today)
     base_score = models.IntegerField(default=1)
     body = models.TextField()
+    retracted = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
 
 class Tag(models.Model):

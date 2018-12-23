@@ -15,7 +15,10 @@ import hashlib
 import base64
 import pdb
 
-tags = ALLOWED_TAGS + ["div", "i", "dl", "dt", "dd", "sup", "sub"]
+tags = ALLOWED_TAGS + ["div", "i", "dl",
+                       "dt", "dd", "sup",
+                       "sub", "table", "th",
+                       "tr", "tbody","td"]
 ALLOWED_ATTRIBUTES.update({"div":['class="toc"']})
 bleach = BleachExtension(tags=tags, )
 md = markdown.Markdown(extensions=[bleach,
@@ -160,6 +163,10 @@ class Comment(DjangoObjectType):
     all_votes = graphene.List(VoteType, resolver=lambda x,y: [])
     html_body = graphene.String(
         description="Dynamic field that renders markdown body as html.")
+    retracted = graphene.Boolean(description="Whether the author has retracted their comment.")
+    #TODO: Make this a placeholder that always returns false and just don't return deleted comments
+    deleted_public = graphene.Boolean(
+        description="Whether this comment has been deleted from view.")
     af = graphene.Boolean(
         description="Legacy field for whether we're on alignment forum, always false.")
     
@@ -179,6 +186,8 @@ class Comment(DjangoObjectType):
             return None
 
     def resolve_html_body(self, info):
+        if self.is_deleted:
+            return "<p>[This post has been deleted]</p>"
         return md.convert(self.body)
 
     def resolve_vote_count(self, info):
@@ -190,6 +199,12 @@ class Comment(DjangoObjectType):
                                        document_id=self.id)
         except IndexError:
             return []
+
+    def resolve_retracted(self, info):
+        return self.retracted
+
+    def resolve_deleted_public(self, info):
+        return self.is_deleted
     
     def resolve_af(self, info):
         """Legacy field for whether this is the Alignment Forum, always false."""
@@ -199,6 +214,7 @@ class CommentsInput(graphene.InputObjectType):
     body = graphene.String()
     post_id = graphene.String()
     parent_comment_id = graphene.String()
+    last_edited_as = graphene.String()
     
 class CommentsNew(graphene.Mutation):
     class Arguments:
@@ -313,6 +329,7 @@ class PostsInput(graphene.InputObjectType):
     title = graphene.String()
     body = graphene.String()
     url = graphene.String()
+    last_edited_as = graphene.String()
 
 class PostsUnset(graphene.InputObjectType):
     meta = graphene.Boolean()
