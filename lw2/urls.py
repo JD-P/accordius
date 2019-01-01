@@ -15,6 +15,6 @@ urlpatterns = [
     url(r'^graphql', csrf_exempt(GraphQLView.as_view())),
     url(r'^graphiql', csrf_exempt(GraphQLView.as_view(graphiql=True))),
     url(r'^api/', include(router.urls)),
-    url(r'^my_invites/', views.InviteList.as_view()),
+    url(r'^api/my_invites/', views.InviteList.as_view()),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 ]
