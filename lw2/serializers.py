@@ -39,13 +39,44 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
         invite_tree_node.child = new_user
         invite_tree_node.save()
 
+        user_profile = Profile()
+        user_profile.user = new_user
+        user_profile.save()
+        
         return new_user
         
 class TagSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Tag
         fields = ('user','document_id','created_at','type','text')
+        read_only_fields = ('user', 'created_at', 'type')
 
+    def create(self, validated_data):
+        user = self.context["request"].user
+        document_id = validated_data.pop('document_id')
+        try:
+            post = Post.objects.filter(id=document_id)[0]
+        except IndexError:
+            raise ValueError("No post with ID {}".format(document_id))
+        #TODO: Use more flexible way of determining this permission
+        if (user != post.user) and not user.profile.all()[0].moderator:
+            raise ValueError(
+                "User '{}' is not authorized to add a tag to this document.".format(
+                    user.username
+                )
+            )
+        new_tag = Tag()
+        new_tag.user = user
+        #TODO: Restrict creation of tags to appropriate character set/etc
+        new_tag.text = validated_data.pop('text')
+        new_tag.created_at = datetime.datetime.now()
+        #TODO: Add ability to tag more than just posts, perhaps comments?
+        new_tag.type = "post"
+        new_tag.document_id = document_id
+        new_tag.full_clean()
+        new_tag.save()
+        return new_tag
+    
 class BanSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Ban
