@@ -472,6 +472,7 @@ class NewVote(graphene.Mutation):
 class CommentsTerms(graphene.InputObjectType):
     """Search terms for the comments_total and the comments_list."""
     limit = graphene.Int()
+    offset = graphene.Int()
     post_id = graphene.String()
     user_id = graphene.String()
     view = graphene.String()
