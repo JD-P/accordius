@@ -48,8 +48,8 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
 class TagSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Tag
-        fields = ('user','document_id','created_at','type','text')
-        read_only_fields = ('user', 'created_at', 'type')
+        fields = ('id', 'user','document_id','created_at','type','text')
+        read_only_fields = ('id', 'user', 'created_at', 'type')
 
     def create(self, validated_data):
         user = self.context["request"].user
