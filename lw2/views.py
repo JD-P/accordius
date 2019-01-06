@@ -2,9 +2,16 @@ from django.shortcuts import render
 from rest_framework import viewsets, filters, generics
 from rest_framework.permissions import DjangoModelPermissions
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication 
 from lw2.models import *
 from lw2.serializers import *
 # Create your views here.
+
+class CsrfExemptSessionAuthentication(SessionAuthentication):
+    """The API doesn't actually communicate with a users browser, so CSRF 
+    doesn't make sense."""
+    def enforce_csrf(self, request):
+        return
 
 class UserViewSet(viewsets.ModelViewSet):
     """
@@ -17,6 +24,7 @@ class TagViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows tags to be viewed or edited.
     """
+    authentication_classes = (CsrfExemptSessionAuthentication,BasicAuthentication)
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     filter_fields = ('user','document_id','text',)
