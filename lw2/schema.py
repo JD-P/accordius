@@ -315,6 +315,10 @@ class Post(DjangoObjectType):
         """Create an HTML text from the Markdown post body."""
         return md.convert(self.body)
 
+    def resolve_comment_count(self, info):
+        """Derived field that returns the number of comments on a given post."""
+        return self.comments.count()
+    
     def resolve_meta(self, info):
         """Legacy field that says whether the post goes into the 'meta' section,
         of the website, whatever that means in our software."""
