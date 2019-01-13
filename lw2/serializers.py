@@ -44,7 +44,25 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
         user_profile.save()
         
         return new_user
-        
+
+class PostSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Post
+        fields = ('id', 'user', 'posted_at', 'title',
+                  'url', 'slug', 'base_score', 'body',
+                  'vote_count', 'comment_count', 'view_count')
+        read_only_fields = ('id', 'user', 'posted_at', 'url',
+                            'slug', 'base_score', 'vote_count',
+                            'comment_count', 'view_count')
+
+class CommentSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Comment
+        fields = ('id', 'user', 'post', 'parent_comment',
+                  'posted_at', 'base_score', 'body', 'retracted',
+                  'is_deleted')
+        ready_only_fields = ('id', 'user', 'posted_at', 'base_score')
+    
 class TagSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Tag
