@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 import markdown
 from mdx_bleach.extension import BleachExtension
 from mdx_bleach.whitelist import ALLOWED_TAGS, ALLOWED_ATTRIBUTES
+from mdx_pmwiki_tables import pmwiki_tables
 import hashlib
 import base64
 import pdb
@@ -18,10 +19,11 @@ import pdb
 tags = ALLOWED_TAGS + ["div", "i", "dl",
                        "dt", "dd", "sup",
                        "sub", "table", "th",
-                       "tr", "tbody","td"]
+                       "tr", "tbody","td",
+                       "ul","ol","li"]
 ALLOWED_ATTRIBUTES.update({"div":['class="toc"']})
 bleach = BleachExtension(tags=tags, )
-md = markdown.Markdown(extensions=[bleach,
+md = markdown.Markdown(extensions=[
                                    'toc',
                                    'meta',
                                    'def_list',

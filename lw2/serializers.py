@@ -46,14 +46,25 @@ class UserSerializer(serializers.HyperlinkedModelSerializer):
         return new_user
 
 class PostSerializer(serializers.ModelSerializer):
+    _id = serializers.CharField(source="id", read_only=True)
+    userId = serializers.CharField(source="user.id", read_only=True)
+    postedAt = serializers.DateTimeField(source="posted_at", read_only=True)
+    title = serializers.CharField()
+    url = serializers.URLField()
+    slug = serializers.CharField(read_only=True)
+    baseScore = serializers.IntegerField(source="base_score", read_only=True)
+    body = serializers.CharField()
+    commentCount = serializers.IntegerField(source="comment_count", read_only=True)
+    viewCount = serializers.IntegerField(source="view_count", read_only=True)
+    meta = serializers.BooleanField(default=False, read_only=True)
+    af = serializers.BooleanField(default=False, read_only=True)
+    question = serializers.BooleanField(default=False, read_only=True)
+    voteCount = serializers.IntegerField(source="vote_count", read_only=True)
+    draft = serializers.BooleanField(default=False, read_only=True)
     class Meta:
         model = Post
-        fields = ('id', 'user', 'posted_at', 'title',
-                  'url', 'slug', 'base_score', 'body',
-                  'vote_count', 'comment_count', 'view_count')
-        read_only_fields = ('id', 'user', 'posted_at', 'url',
-                            'slug', 'base_score', 'vote_count',
-                            'comment_count', 'view_count')
+        fields = ('_id', 'userId', 'postedAt', 'title', 'url', 'slug', 'body',
+                  'baseScore', 'voteCount', 'commentCount', 'viewCount', 'meta', 'af', 'question', 'draft')
 
 class CommentSerializer(serializers.ModelSerializer):
     class Meta:

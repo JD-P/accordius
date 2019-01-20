@@ -75,7 +75,7 @@ def mk_operation(op):
         op = op[1:]
         
     if op[0] == op[-1] == "\"":
-        operation["Q"] = Q(body__iexact=op)
+        operation["Q"] = Q(body__contains=op)
     else:
         operation["Q"] = Q(body__icontains=op)
     return operation
