@@ -63,16 +63,28 @@ class PostSerializer(serializers.ModelSerializer):
     draft = serializers.BooleanField(default=False, read_only=True)
     class Meta:
         model = Post
-        fields = ('_id', 'userId', 'postedAt', 'title', 'url', 'slug', 'body',
-                  'baseScore', 'voteCount', 'commentCount', 'viewCount', 'meta', 'af', 'question', 'draft')
+        fields = ('_id', 'userId', 'postedAt', 'title',
+                  'url', 'slug', 'body', 'baseScore',
+                  'voteCount', 'commentCount', 'viewCount', 'meta',
+                  'af', 'question', 'draft')
 
 class CommentSerializer(serializers.ModelSerializer):
+    _id = serializers.CharField(source="id", read_only=True)
+    userId = serializers.CharField(source="user.id", read_only=True)
+    postId = serializers.CharField(source="post.id")
+    parentCommentId = serializers.CharField(default=None, source="parent_comment.id")
+    postedAt = serializers.DateTimeField(source="posted_at", read_only=True)
+    baseScore = serializers.IntegerField(source="base_score", read_only=True)
+    body = serializers.CharField()
+    retracted = serializers.BooleanField()
+    answer = serializers.BooleanField(default=False, read_only=True)
+    htmlBody = serializers.CharField(default="", read_only=True)
+    isDeleted = serializers.BooleanField(source="is_deleted")
     class Meta:
         model = Comment
-        fields = ('id', 'user', 'post', 'parent_comment',
-                  'posted_at', 'base_score', 'body', 'retracted',
-                  'is_deleted')
-        ready_only_fields = ('id', 'user', 'posted_at', 'base_score')
+        fields = ('_id', 'userId', 'postId', 'parentCommentId',
+                  'postedAt', 'baseScore', 'body', 'retracted',
+                  'answer', 'htmlBody', 'isDeleted')
     
 class TagSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
