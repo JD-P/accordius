@@ -10,6 +10,7 @@ class AuthHeaderMiddleware(object):
         if not authorization:
             response = self.get_response(request)
             return response
+        # TODO: Add code to handle session expiration
         request.user = User.objects.get(
             id = SessionStore(session_key = authorization).get('_auth_user_id')
         )

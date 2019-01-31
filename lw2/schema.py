@@ -7,29 +7,12 @@ from .models import Profile,Vote, Notification, Conversation, Participant
 from .models import Message as MessageModel
 from .models import Post as PostModel
 from .models import Comment as CommentModel
+from .markdown import md
 from datetime import datetime, timezone
-import markdown
-from mdx_bleach.extension import BleachExtension
-from mdx_bleach.whitelist import ALLOWED_TAGS, ALLOWED_ATTRIBUTES
-from mdx_pmwiki_tables import pmwiki_tables
+
 import hashlib
 import base64
 import pdb
-
-tags = ALLOWED_TAGS + ["div", "i", "dl",
-                       "dt", "dd", "sup",
-                       "sub", "table", "th",
-                       "tr", "tbody","td",
-                       "ul","ol","li"]
-ALLOWED_ATTRIBUTES.update({"div":['class="toc"']})
-bleach = BleachExtension(tags=tags, )
-md = markdown.Markdown(extensions=[
-                                   'toc',
-                                   'meta',
-                                   'def_list',
-                                   'superscript',
-                                   'subscript',
-                                   'mdx_linkify'])
 
 def make_id(username, utc_timestamp):
     hashable = username + str(utc_timestamp)
