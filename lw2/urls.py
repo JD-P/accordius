@@ -7,6 +7,8 @@ from lw2 import views
 
 router = routers.DefaultRouter()
 router.register(r'users', views.UserViewSet)
+router.register(r'posts', views.PostViewSet)
+router.register(r'comments', views.CommentViewSet)
 router.register(r'tags', views.TagViewSet)
 router.register(r'bans', views.BanViewSet)
 router.register(r'invites', views.InviteViewSet)

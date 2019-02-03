@@ -50,7 +50,7 @@ class PostSerializer(serializers.ModelSerializer):
     userId = serializers.CharField(source="user.id", read_only=True)
     postedAt = serializers.DateTimeField(source="posted_at", read_only=True)
     title = serializers.CharField()
-    url = serializers.URLField()
+    url = serializers.URLField(required=False)
     slug = serializers.CharField(read_only=True)
     baseScore = serializers.IntegerField(source="base_score", read_only=True)
     body = serializers.CharField()

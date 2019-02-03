@@ -28,6 +28,25 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
 
+class PostViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows posts to be viewed or edited.
+    """
+    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    queryset = Post.objects.all()
+    serializer_class = PostSerializer
+    
+    
+class CommentViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows comments to be viewed or edited.
+    """
+    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    queryset = Comment.objects.all()
+    serializer_class = CommentSerializer
+    def destroy(self, request, pk=None):
+        return True
+    
 class TagViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows tags to be viewed or edited.
