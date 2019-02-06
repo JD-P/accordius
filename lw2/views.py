@@ -42,10 +42,16 @@ class CommentViewSet(viewsets.ModelViewSet):
     API endpoint that allows comments to be viewed or edited.
     """
     authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
-    queryset = Comment.objects.all()
+    # Figure out later perhaps if there's a better way to ensure deleted content
+    # can't be retrieved
+    # TODO: Make deleted comments more foolproof
+    queryset = Comment.objects.filter(is_deleted=False)
     serializer_class = CommentSerializer
     def destroy(self, request, pk=None):
-        return True
+        comment = self.queryset.get(id=pk)
+        comment.is_deleted = True
+        comment.save()
+        return HttpResponse("Test")
     
 class TagViewSet(viewsets.ModelViewSet):
     """
