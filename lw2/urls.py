@@ -14,11 +14,11 @@ router.register(r'post_search', views.PostSearchView, basename="post-search")
 router.register(r'comment_search', views.CommentSearchView, basename="comment-search")
 router.register(r'bans', views.BanViewSet)
 router.register(r'invites', views.InviteViewSet)
+router.register(r'my_invites', views.InviteList, basename="my-invites")
 
 urlpatterns = [
     url(r'^graphql', csrf_exempt(GraphQLView.as_view())),
     url(r'^graphiql', csrf_exempt(GraphQLView.as_view(graphiql=True))),
     url(r'^api/', include(router.urls)),
-    url(r'^api/my_invites/', views.InviteList.as_view()),
     url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
 ]

@@ -48,6 +48,7 @@ class CommentViewSet(viewsets.ModelViewSet):
     # TODO: Make deleted comments more foolproof
     queryset = Comment.objects.filter(is_deleted=False)
     serializer_class = CommentSerializer
+    
     def destroy(self, request, pk=None):
         comment = self.queryset.get(id=pk)
         comment.is_deleted = True
@@ -79,16 +80,17 @@ class InviteViewSet(viewsets.ModelViewSet):
     queryset = Invite.objects.all()
     serializer_class = InviteSerializer
 
-class InviteList(generics.ListAPIView):
+class InviteList(viewsets.ViewSet):
     """
     API endpoint that lets a user get a list of their created invite codes.
     """
-    serializer_class = RestrictedInviteSerializer
-
-    def get_queryset(self):
+    
+    def list(self, request):
         user = self.request.user
+        invite_serializer = RestrictedInviteSerializer(Invite.objects.filter(creator=user),
+                                                       context={'request': request}, many=True)
         if user.is_authenticated:
-            return Invite.objects.filter(creator=user)
+            return Response(invite_serializer.data)
 
 # TODO: Refactor these to both inherit from one class or use same underlying method
 # definition
