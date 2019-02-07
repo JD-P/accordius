@@ -9,6 +9,7 @@ from rest_framework.authentication import SessionAuthentication, BasicAuthentica
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.renderers import JSONRenderer
+from rest_framework.decorators import action
 from lw2.models import *
 from lw2.serializers import *
 import lw2.search as wl_search
@@ -91,11 +92,11 @@ class InviteList(generics.ListAPIView):
 
 # TODO: Refactor these to both inherit from one class or use same underlying method
 # definition
-class PostSearchView(View):
+class PostSearchView(viewsets.ViewSet):
     """Search posts with a query string ?query=
 
     See search.py for a quick guide to the search syntax rules."""
-    def get(self, request):
+    def list(self, request):
         try:
             parsed_search = wl_search.parse_search_string(request.GET["query"])
         except MultiValueDictKeyError:
@@ -111,11 +112,11 @@ class PostSearchView(View):
         return HttpResponse(JSONRenderer().render(post_serializer.data),
                             content_type="application/json")
         
-class CommentSearchView(View):
+class CommentSearchView(viewsets.ViewSet):
     """Search comments with a query string ?query=
 
     See search.py for a quick guide to the search syntax rules."""
-    def get(self, request):
+    def list(self, request):
         try:
             parsed_search = wl_search.parse_search_string(request.GET["query"])
         except MultiValueDictKeyError:
