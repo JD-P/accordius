@@ -1,6 +1,8 @@
 from datetime import date, datetime
 from django.db import models
 from django.contrib.auth.models import User
+from django.core.exceptions import ValidationError
+import re
 
 
 # Create your models here.
@@ -74,6 +76,10 @@ class Comment(models.Model):
     retracted = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
 
+def validate_tag_text(text):
+    if "," in text or ";" in text:
+        raise ValidationError("Commas and semicolons aren't allowed in tags")
+    
 class Tag(models.Model):
     """A tag on a post, comment, or other taggable item.
 
@@ -91,7 +97,11 @@ class Tag(models.Model):
     type = models.CharField(max_length=40)
     created_at = models.DateTimeField(default=datetime.today)
     # Length-Limited by views
-    text = models.TextField(unique=True)
+    text = models.TextField(unique=True, validators=[validate_tag_text])
+
+    def clean(self):
+        # Replace non-space whitespace and strip leading whitespace
+        self.text = re.sub("\s", " ", self.text).strip()
     
 class Vote(models.Model):
     """A vote on a post, comment, or other votable item.

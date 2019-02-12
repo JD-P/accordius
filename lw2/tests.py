@@ -62,7 +62,6 @@ class InviteTestCase(TestCase):
     def test_invite_creation(self):
         """Test whether the invite creation API is functioning."""
         #TODO: Log in with GraphQL
-        #TODO: Fix Markdown errors so I can log in with GraphQL
         response0 = c.post("/graphql/", {"query":"""
         mutation Login($user: String, $password: String) {
         Login(username: $user, password: $password) {
@@ -86,3 +85,53 @@ class InviteTestCase(TestCase):
         self.assertEquals(len(invite_data), 1)
         self.assertTrue('used_by' in invite_data[0].keys())
         
+class TagTestCase(TestCase):
+    def setUp(self):
+        user = User.objects.create_user('testuser', 'jd@jdpressman.com', 'testpassword')
+        user_profile = Profile()
+        user_profile.user = user
+        user_profile.save()
+
+        self.post1 = Post.objects.create(id='aaaaaaaaaaaaaaaaa', user=user,
+                                         title='My Fruit Post',
+                                         url=None, slug="test-slug-1",
+                                         base_score=5,
+                                         body="My Apple Orange Mango")
+
+    def login(self):
+        response0 = c.post("/graphql/", {"query":"""
+        mutation Login($user: String, $password: String) {
+        Login(username: $user, password: $password) {
+        userId
+        sessionKey
+        expiration
+        }
+        } """,
+                                         "variables":"""{
+                                         "user":"testuser",
+                                         "password":"testpassword"
+                                         }"""})
+        
+    def test_tag_creation(self):
+        """Test that we can create a tag and read its contents"""
+        self.login()
+        response1 = c.post("/api/tags/",
+                           {"document_id":self.post1.id,
+                            "text":"testtag"})
+        tag_id = json.loads(response1.content.decode("UTF-8"))["id"]
+        response2 = c.get("/api/tags/" + str(tag_id) + "/") 
+        tag_data = json.loads(response2.content.decode("UTF-8"))
+        self.assertEquals(tag_data["text"], "testtag")
+
+    def test_tag_restrictions(self):
+        """Test that tags don't allow semicolons or commas at creation."""
+        self.login()
+        # TODO: Figure out how to display useful error message on failure
+        response1 = c.post("/api/tags/",
+                           {"document_id":self.post1.id,
+                            "text":"my,bad,tag"})
+        self.assertEquals(response1.status_code, 400)
+        response2 = c.post("/api/tags/",
+                           {"document_id":self.post1.id,
+                            "text":"my;bad;tag"})
+        self.assertEquals(response2.status_code, 400)

@@ -64,6 +64,8 @@ class TagViewSet(viewsets.ModelViewSet):
     serializer_class = TagSerializer
     filter_fields = ('user','document_id','text',)
 
+#TODO: Add API endpoint here that returns tag validation regex    
+    
 class BanViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows bans to be viewed or edited.
