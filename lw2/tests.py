@@ -10,6 +10,63 @@ import pdb
 
 c = Client()
 
+class PostTestCase(TestCase):
+    # TODO: Stop anonymous users from making posts and add unit tests for it
+    def setUp(self):
+        user = User.objects.create_user('testuser', 'jd@jdpressman.com', 'testpassword')
+
+    def login(self):
+        response0 = c.post("/graphql/", {"query":"""
+        mutation Login($user: String, $password: String) {
+        Login(username: $user, password: $password) {
+        userId
+        sessionKey
+        expiration
+        }
+        } """,
+                                         "variables":"""{
+                                         "user":"testuser",
+                                         "password":"testpassword"
+                                         }"""})
+
+    def test_post_creation_plain(self):
+        self.login()
+        c.post("/api/posts/",
+               {"title":"My Fruit Post",
+                "body":"My Apple Orange Mango"})
+        posts_json = c.get("/api/posts/")
+        posts = json.loads(posts_json.content.decode("UTF-8"))
+        self.assertEqual(len(posts), 1)
+        self.assertEqual(posts[0]["title"], "My Fruit Post")
+        self.assertEqual(posts[0]["body"], "My Apple Orange Mango")
+
+    def test_post_creation_url(self):
+        self.login()
+        c.post("/api/posts/",
+               {"title":"My Fruit Post",
+                "url":"https://en.wikipedia.org/wiki/Fruit",
+                "body":"My Apple Orange Mango"})
+        posts_json = c.get("/api/posts/")
+        posts = json.loads(posts_json.content.decode("UTF-8"))
+        self.assertEqual(len(posts), 1)
+        self.assertEqual(posts[0]["title"], "My Fruit Post")
+        self.assertEqual(posts[0]["url"], "https://en.wikipedia.org/wiki/Fruit")
+        self.assertEqual(posts[0]["body"], "My Apple Orange Mango")
+
+    def test_tagset_update(self):
+        self.login()
+        response0= c.post("/api/posts/",
+                          {"title":"My Fruit Post",
+                           "url":"https://en.wikipedia.org/wiki/Fruit",
+                           "body":"My Apple Orange Mango"})
+        post = json.loads(response0.content.decode("UTF-8"))
+        c.post("/api/posts/" + post["_id"] + "/update_tagset/",
+               {"tags":"my,tag,set"})
+        response1 = c.get("/api/tags/")
+        tags = json.loads(response1.content.decode("UTF-8"))
+        self.assertEquals(len(tags), 3)
+        self.assertEquals(set(["my","tag","set"]), set([tag["text"] for tag in tags]))
+        
 class SearchTestCase(TestCase):
     def setUp(self):
         user = User.objects.create_user('testuser', 'jd@jdpressman.com', 'testpassword')

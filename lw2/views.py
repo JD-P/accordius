@@ -13,6 +13,7 @@ from rest_framework.decorators import action
 from lw2.models import *
 from lw2.serializers import *
 import lw2.search as wl_search
+import datetime
 import pdb
 # Create your views here.
 
@@ -36,7 +37,50 @@ class PostViewSet(viewsets.ModelViewSet):
     authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
     queryset = Post.objects.all()
     serializer_class = PostSerializer
-    
+
+    # TODO: Convert this to use a custom permission class
+    # TODO: Define this for the GET method instead of just POST?
+    @action(detail=True, methods=['post'])
+    def update_tagset(self, request, pk=None):
+        """Replace the current set of tags on a post with the tags specified in 
+        a comma separated list given by the client.
+
+        Parameters:
+
+        tags: A comma separated list of tags to update the post set to. 
+        No commas or semicolons."""
+        # Try to detect bad update strings and errors before we delete the tags
+        if (";" in request.POST["tags"]):
+            return HttpResponse("Semicolons are not allowed in the update string.",
+                                status_code=400)
+        if '' in request.POST["tags"].split(","):
+            return HttpResponse(
+                """You've repeated a comma in your update string, implying you're 
+                allowing commas in tags. Commas are not allowed to appear in a 
+                tag string.""",
+                status_code=400)
+        try:
+            post = Post.objects.get(id=pk)
+        except:
+            return HttpResponse("No post with id {}".format(pk),
+                                status_code=404)
+        # It'd be quite the bug if you could delete the tags on someone else's
+        # post
+        if post.user != request.user:
+            return HttpResponse(
+                "User {} is not the author of this post ({})".format(request.user.username,
+                                                                     post.user.username),
+                status_code=403)
+        tags = Tag.objects.filter(document_id=pk).delete()
+        for new_tag_text in request.POST["tags"].split(","):
+            new_tag = Tag(user=request.user,
+                          document_id=pk,
+                          type="post",
+                          created_at = datetime.datetime.now(),
+                          text=new_tag_text)
+            new_tag.full_clean()
+            new_tag.save()
+        return HttpResponse("Tags updated")
     
 class CommentViewSet(viewsets.ModelViewSet):
     """
@@ -51,9 +95,11 @@ class CommentViewSet(viewsets.ModelViewSet):
     
     def destroy(self, request, pk=None):
         comment = self.queryset.get(id=pk)
+        if comment.user != request.user:
+            raise ValueError("Only a comments author can delete their comment")
         comment.is_deleted = True
         comment.save()
-        return HttpResponse("Test")
+        return HttpResponse("Comment deleted")
     
 class TagViewSet(viewsets.ModelViewSet):
     """
@@ -63,6 +109,7 @@ class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     filter_fields = ('user','document_id','text',)
+        
 
 #TODO: Add API endpoint here that returns tag validation regex    
     

@@ -2,7 +2,20 @@ from django.contrib.auth.models import User
 from lw2.models import *
 from rest_framework import serializers
 import datetime
+import hashlib
+import base64
 import random
+
+def make_id(username, utc_timestamp):
+    hashable = username + str(utc_timestamp)
+    hash_raw = hashlib.md5(hashable.encode())
+    hash_b64 = base64.b64encode(hash_raw.digest()).decode()
+    return hash_b64[:17].replace("/","_").replace("+","-")
+
+def make_id_from_user(username):
+    """Wrapper around make_id that eliminates finnicky time handling code."""
+    return make_id(username,
+                   datetime.datetime.today().replace(tzinfo=datetime.timezone.utc).timestamp())
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
     code = serializers.CharField(write_only=True)
@@ -68,6 +81,27 @@ class PostSerializer(serializers.ModelSerializer):
                   'voteCount', 'commentCount', 'viewCount', 'meta',
                   'af', 'question', 'draft')
 
+    def create(self, validated_data):
+        # We're forced to create the posts manually to generate ID's for them
+        # TODO: Comments almost certainly suffer from a similar error, reevaluate
+        # need for these ID's
+        user = self.context["request"].user
+        try:
+            url = validated_data.pop("url")
+        except:
+            url = None
+        title = validated_data.pop("title")
+        slug = title.strip().lower().replace(" ", "-")[:60]
+        new_post = Post(id=make_id_from_user(user.username),
+                        user=user,
+                        title=title,
+                        url=url,
+                        slug=slug,
+                        body=validated_data.pop("body"))
+        new_post.full_clean()
+        new_post.save()
+        return new_post
+        
 class CommentSerializer(serializers.ModelSerializer):
     _id = serializers.CharField(source="id", read_only=True)
     userId = serializers.CharField(source="user.id", read_only=True)

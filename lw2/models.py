@@ -36,13 +36,13 @@ class Post(models.Model):
         ordering = ['-posted_at']
     id = models.CharField(primary_key=True, max_length=17)
     posted_at = models.DateTimeField(default=datetime.today)
-    frontpage_date = models.DateTimeField(null=True, default=None)
-    curated_date = models.DateTimeField(null=True, default=None)
+    frontpage_date = models.DateTimeField(blank=True, null=True, default=None)
+    curated_date = models.DateTimeField(blank=True, null=True, default=None)
     user = models.ForeignKey(User, related_name="posts",
                              null=True, on_delete=models.SET_NULL)
     title = models.CharField(default="Untitled (this should never appear)",
                              max_length=250)
-    url = models.URLField(null=True)
+    url = models.URLField(blank=True, null=True)
     slug = models.CharField(max_length=60)
     base_score = models.IntegerField(default=1)
     body = models.TextField()
