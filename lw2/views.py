@@ -40,7 +40,7 @@ class PostViewSet(viewsets.ModelViewSet):
 
     # TODO: Convert this to use a custom permission class
     # TODO: Define this for the GET method instead of just POST?
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['get', 'post'])
     def update_tagset(self, request, pk=None):
         """Replace the current set of tags on a post with the tags specified in 
         a comma separated list given by the client.
@@ -49,6 +49,17 @@ class PostViewSet(viewsets.ModelViewSet):
 
         tags: A comma separated list of tags to update the post set to. 
         No commas or semicolons."""
+        if request.method == 'GET':
+            try:
+                post = Post.objects.get(id=pk)
+            except:
+                return HttpResponse("No post with id {}".format(pk),
+                                    status_code=404)
+            tagstring = ','.join(
+                [tag.text for tag in Tag.objects.filter(document_id=pk)]
+            )
+            return HttpResponse(JSONRenderer().render(tagstring),
+                                content_type="application/json")
         # Try to detect bad update strings and errors before we delete the tags
         if (";" in request.POST["tags"]):
             return HttpResponse("Semicolons are not allowed in the update string.",

@@ -13,7 +13,7 @@ c = Client()
 class PostTestCase(TestCase):
     # TODO: Stop anonymous users from making posts and add unit tests for it
     def setUp(self):
-        user = User.objects.create_user('testuser', 'jd@jdpressman.com', 'testpassword')
+        self.user = User.objects.create_user('testuser', 'jd@jdpressman.com', 'testpassword')
 
     def login(self):
         response0 = c.post("/graphql/", {"query":"""
@@ -53,7 +53,27 @@ class PostTestCase(TestCase):
         self.assertEqual(posts[0]["url"], "https://en.wikipedia.org/wiki/Fruit")
         self.assertEqual(posts[0]["body"], "My Apple Orange Mango")
 
-    def test_tagset_update(self):
+    def test_tagset_update_get(self):
+        self.login()
+        post = Post.objects.create(id='aaaaaaaaaaaaaaaaa', user=self.user,
+                                   title='My Fruit Post',
+                                   url=None, slug="test-slug-1",
+                                   base_score=5,
+                                   body="My Apple Orange Mango")
+        response1 = c.post("/api/tags/",
+                           {"document_id":post.id,
+                            "text":"my"})
+        response2 = c.post("/api/tags/",
+                           {"document_id":post.id,
+                            "text":"tag"})
+        response3 = c.post("/api/tags/",
+                           {"document_id":post.id,
+                            "text":"set"})
+        response4 = c.get("/api/posts/{}/update_tagset/".format(post.id))
+        self.assertEqual(json.loads(response4.content.decode("UTF-8")).split(","),
+                         ["my","tag","set"])
+        
+    def test_tagset_update_post(self):
         self.login()
         response0= c.post("/api/posts/",
                           {"title":"My Fruit Post",
