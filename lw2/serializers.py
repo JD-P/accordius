@@ -151,7 +151,77 @@ class TagSerializer(serializers.HyperlinkedModelSerializer):
         new_tag.full_clean()
         new_tag.save()
         return new_tag
-    
+
+class VoteSerializer(serializers.HyperlinkedModelSerializer):
+    collection_name = serializers.CharField(
+        write_only=True,
+        help_text="The collection to which a document belongs, generally 'posts' or 'comments'.")
+    class Meta:
+        model = Vote
+        fields = ('user', 'document_id', 'voted_at', 'vote_type', 'power',
+                  'collection_name')
+        read_only_fields = ('user', 'voted_at', 'power')
+
+    # TODO: Stop unauthenticated users from voting on submissions :p
+    # TODO: Decide whether we want voting at all, overhaul voting system
+    # TODO: Fix bug where you can't change votes
+    # TODO: This code looks repetitive and ugly, refactor?
+    def create(self, validated_data):
+        document_id = validated_data.pop("document_id")
+        vote_type = validated_data.pop("vote_type")
+        collection_name = validated_data.pop("collection_name")
+        if collection_name.lower() == "comments":
+            if Vote.objects.filter(document_id=document_id):
+                return HttpResponse("User already voted on this",
+                                    status_code=409)
+            comment = Comment.objects.get(id=document_id)
+            #TODO: Enforce valid vote types
+            vote = Vote(user=self.context["request"].user,
+                        document_id=document_id,
+                        voted_at=datetime.datetime.today(),
+                        vote_type=vote_type)
+            if "Upvote" in vote_type:
+                comment.base_score += 1
+            elif "Downvote" in vote_type:
+                comment.base_score -= 1
+            else:
+                return HttpResponse(
+                    "'{}' does not appear to be upvote or downvote".format(
+                        vote_type),
+                    status_code=400
+                )
+            vote.save()
+            comment.save()
+            return vote
+        elif collection_name.lower() == "posts":
+            if Vote.objects.filter(document_id=document_id):
+                return HttpResponse("User already voted on this",
+                                    status_code=409)
+            post = Post.objects.get(id=document_id)
+            #TODO: Enforce valid vote types
+            vote = Vote(user=self.context["request"].user,
+                        document_id=document_id,
+                        voted_at=datetime.datetime.today(),
+                        vote_type=vote_type)
+            if "Upvote" in vote_type:
+                post.base_score += 1
+            elif "Downvote" in vote_type:
+                post.base_score -= 1
+            else:
+                return HttpResponse(
+                    "'{}' does not appear to be upvote or downvote".format(
+                        vote_type),
+                    status_code=400
+                )
+            vote.save()
+            post.save()
+            return vote
+        else:
+            return HttpResponse(
+                "Collection '{}' is not handled by accordius!".format(
+                    collection_name),
+                status_code=400)
+        
 class BanSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
         model = Ban

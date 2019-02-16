@@ -39,7 +39,6 @@ class PostViewSet(viewsets.ModelViewSet):
     serializer_class = PostSerializer
 
     # TODO: Convert this to use a custom permission class
-    # TODO: Define this for the GET method instead of just POST?
     @action(detail=True, methods=['get', 'post'])
     def update_tagset(self, request, pk=None):
         """Replace the current set of tags on a post with the tags specified in 
@@ -121,7 +120,15 @@ class TagViewSet(viewsets.ModelViewSet):
     serializer_class = TagSerializer
     filter_fields = ('user','document_id','text',)
         
+class VoteViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows votes to be viewed or edited.
+    """
+    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    queryset = Vote.objects.all()
+    serializer_class = VoteSerializer
 
+    
 #TODO: Add API endpoint here that returns tag validation regex    
     
 class BanViewSet(viewsets.ModelViewSet):

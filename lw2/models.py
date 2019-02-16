@@ -97,7 +97,7 @@ class Tag(models.Model):
     type = models.CharField(max_length=40)
     created_at = models.DateTimeField(default=datetime.today)
     # Length-Limited by views
-    text = models.TextField(unique=True, validators=[validate_tag_text])
+    text = models.TextField(validators=[validate_tag_text])
 
     def clean(self):
         # Replace non-space whitespace and strip leading whitespace

@@ -212,3 +212,74 @@ class TagTestCase(TestCase):
                            {"document_id":self.post1.id,
                             "text":"my;bad;tag"})
         self.assertEquals(response2.status_code, 400)
+
+#TODO: Add unit tests for changing votes
+class VoteTestCase(TestCase):
+    def setUp(self):
+        user = User.objects.create_user('testuser', 'jd@jdpressman.com', 'testpassword')
+        user_profile = Profile()
+        user_profile.user = user
+        user_profile.save()
+
+        self.post1 = Post.objects.create(id='aaaaaaaaaaaaaaaaa', user=user,
+                                         title='My Fruit Post',
+                                         url=None, slug="test-slug-1",
+                                         base_score=5,
+                                         body="My Apple Orange Mango")
+        self.post1.save()
+
+    def login(self):
+        response0 = c.post("/graphql/", {"query":"""
+        mutation Login($user: String, $password: String) {
+        Login(username: $user, password: $password) {
+        userId
+        sessionKey
+        expiration
+        }
+        } """,
+                                         "variables":"""{
+                                         "user":"testuser",
+                                         "password":"testpassword"
+                                         }"""})
+
+    def test_vote_creation_upvote(self):
+        self.login()
+        response0 = c.post("/api/votes/",
+                           {"document_id":self.post1.id,
+                            "vote_type":"Upvote",
+                            "collection_name":"posts"})
+        response1 = c.get("/api/votes/")
+        votes = json.loads(response1.content.decode("UTF-8"))
+        self.assertEqual(votes[0]["document_id"], self.post1.id)
+        self.assertEqual(votes[0]["vote_type"].lower(), "upvote")
+
+    def test_vote_creation_downvote(self):
+        self.login()
+        response0 = c.post("/api/votes/",
+                           {"document_id":self.post1.id,
+                            "vote_type":"Downvote",
+                            "collection_name":"posts"})
+        response1 = c.get("/api/votes/")
+        votes = json.loads(response1.content.decode("UTF-8"))
+        self.assertEqual(votes[0]["document_id"], self.post1.id)
+        self.assertEqual(votes[0]["vote_type"].lower(), "downvote")
+
+    def test_vote_creation_changes_score_upvote(self):
+        self.login()
+        response0 = c.post("/api/votes/",
+                           {"document_id":self.post1.id,
+                            "vote_type":"Upvote",
+                            "collection_name":"posts"})
+        response1 = c.get("/api/votes/")
+        post1_updated = Post.objects.all()[0]
+        self.assertEqual(post1_updated.base_score,6)
+
+    def test_vote_creation_changes_score_downvote(self):
+        self.login()
+        response0 = c.post("/api/votes/",
+                           {"document_id":self.post1.id,
+                            "vote_type":"Downvote",
+                            "collection_name":"posts"})
+        response1 = c.get("/api/votes/")
+        post1_updated = Post.objects.all()[0]
+        self.assertEqual(post1_updated.base_score,4)
