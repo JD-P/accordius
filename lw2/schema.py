@@ -344,7 +344,6 @@ class PostsNew(graphene.Mutation):
 
     @staticmethod
     def mutate(root, info, document=None):
-        pdb.set_trace()
         user = info.context.user
         if not user.is_authenticated:
             raise ValueError("Your user isn't logged in")
