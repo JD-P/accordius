@@ -14,9 +14,8 @@ MarkdownSubscript==2.1.1
 MarkdownSuperscript==2.1.1
 mdx-bleach==0.1.4
 mdx-linkify==1.2
-mdx-pmwiki-tables==0.1
+-e git+git@github.com:JD-P/mdx_pmwiki_tables.git@master#egg=mdx-pmwiki-tables
 mdx-truly-sane-lists==1.2
-pkg-resources==0.0.0
 promise==2.2.1
 pytz==2018.9
 rcslice==1.1.0
