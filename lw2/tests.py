@@ -53,6 +53,13 @@ class PostTestCase(TestCase):
         self.assertEqual(posts[0]["url"], "https://en.wikipedia.org/wiki/Fruit")
         self.assertEqual(posts[0]["body"], "My Apple Orange Mango")
 
+    def test_post_creation_no_title_fails(self):
+        """Test that the server will not accept a post with no title in REST 
+        API.
+
+        TODO: Write this test and make it pass."""
+        pass
+    
     def test_tagset_update_get(self):
         self.login()
         post = Post.objects.create(id='aaaaaaaaaaaaaaaaa', user=self.user,
@@ -86,6 +93,37 @@ class PostTestCase(TestCase):
         tags = json.loads(response1.content.decode("UTF-8"))
         self.assertEquals(len(tags), 3)
         self.assertEquals(set(["my","tag","set"]), set([tag["text"] for tag in tags]))
+
+class CommentTestCase(TestCase):
+    def setUp(self):
+        pass
+
+    def test_deleted_comment_no_reply(self):
+        """Test that the server will not allow you to create new comments with
+        a deleted comment as the parent.
+
+        TODO: Write this test and make it pass."""
+        pass
+
+    def test_deleted_comment_replies_edit(self):
+        """Test that the server will still allow you to edit existing replies 
+        which have a deleted comment as the parent.
+
+        TODO: Write this test and make it pass."""
+        pass
+    
+    def test_deleted_comment_not_counted(self):
+        """Test that deleted comments aren't counted in the numeric summary
+        of how many comments are on a thread (if applicable in REST API).
+
+        TODO: Write this test and make it pass."""
+        pass
+    
+    def test_deleted_comment_no_vote(self):
+        """Test that deleted comments cannot be voted upon.
+
+        TODO: Write this test and make it pass."""
+        pass
         
 class SearchTestCase(TestCase):
     def setUp(self):
@@ -161,7 +199,7 @@ class InviteTestCase(TestCase):
         invite_data = json.loads(response2.content.decode("UTF-8"))
         self.assertEquals(len(invite_data), 1)
         self.assertTrue('used_by' in invite_data[0].keys())
-        
+
 class TagTestCase(TestCase):
     def setUp(self):
         user = User.objects.create_user('testuser', 'jd@jdpressman.com', 'testpassword')
@@ -212,6 +250,41 @@ class TagTestCase(TestCase):
                            {"document_id":self.post1.id,
                             "text":"my;bad;tag"})
         self.assertEquals(response2.status_code, 400)
+
+    def test_no_post_without_tags(self):
+        """Test that it's not possible to create a post without at least one 
+        tag.
+
+        TODO: Write this test and make it pass once API is switched over."""
+        pass
+        
+    def test_tag_delimiter_double_end(self):
+        """Test that tag update strings which end with two delimiters on either
+        side are still accepted by the server.
+
+        TODO: Write this test and make it pass."""
+        pass
+        
+    def test_tag_delimiter_mixed(self):
+        """Test that strings which use both semicolons and commas as tag 
+        delimiters are accepted by the API.
+
+        TODO: Write this test and make it pass."""
+        pass
+
+    def test_whitespace_tag_fails(self):
+        """Test that tags made entirely of whitespace are not accepted by the
+        server.
+
+        TODO: Write this test and make it pass."""
+        pass
+    
+    def test_tag_duplicate_fails(self):
+        """Test that you can't add the same tag twice to the same post.
+
+        TODO: Enforce this test once I figure out what behavior I want server
+        to have on this case."""
+        pass
 
 #TODO: Add unit tests for changing votes
 class VoteTestCase(TestCase):

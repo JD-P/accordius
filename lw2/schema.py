@@ -347,6 +347,8 @@ class PostsNew(graphene.Mutation):
         user = info.context.user
         if not user.is_authenticated:
             raise ValueError("Your user isn't logged in")
+        if not document.title:
+            raise ValueError("Can't make a post with an empty title!")
         posted_at = datetime.today()
         _id = make_id(user.username,
                       posted_at.replace(tzinfo=timezone.utc).timestamp())
