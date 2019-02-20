@@ -19,11 +19,11 @@ OPERATORS.
 - The AND operator is applied by separating two or more expressions with SPACES.
 
 - The OR operator is applied by typing capital OR surrounded by whitespace 
-  between two or more expressions. (Not currently implemented)
+  between two or more expressions.
 
 - The NOT operator is applied by putting a dash (-) in front of an expression,
   this will cause the search backend to use an exclude() instead of a filter()
-  for that exrpression. (TODO: Make this actually work, currently just AND)
+  for that exrpression.
 
 The syntax also supports PARAMETERS, which are special search string keywords
 that can be passed to specify certain behavior such as date restrictions. These
