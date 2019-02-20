@@ -53,7 +53,7 @@ class PostViewSet(viewsets.ModelViewSet):
                 post = Post.objects.get(id=pk)
             except:
                 return HttpResponse("No post with id {}".format(pk),
-                                    status_code=404)
+                                    status=404)
             tagstring = ','.join(
                 [tag.text for tag in Tag.objects.filter(document_id=pk)]
             )
@@ -62,25 +62,25 @@ class PostViewSet(viewsets.ModelViewSet):
         # Try to detect bad update strings and errors before we delete the tags
         if (";" in request.POST["tags"]):
             return HttpResponse("Semicolons are not allowed in the update string.",
-                                status_code=400)
+                                status=400)
         if '' in request.POST["tags"].split(","):
             return HttpResponse(
                 """You've repeated a comma in your update string, implying you're 
                 allowing commas in tags. Commas are not allowed to appear in a 
                 tag string.""",
-                status_code=400)
+                status=400)
         try:
             post = Post.objects.get(id=pk)
         except:
             return HttpResponse("No post with id {}".format(pk),
-                                status_code=404)
+                                status=404)
         # It'd be quite the bug if you could delete the tags on someone else's
         # post
         if post.user != request.user:
             return HttpResponse(
                 "User {} is not the author of this post ({})".format(request.user.username,
                                                                      post.user.username),
-                status_code=403)
+                status=403)
         tags = Tag.objects.filter(document_id=pk).delete()
         for new_tag_text in request.POST["tags"].split(","):
             new_tag = Tag(user=request.user,

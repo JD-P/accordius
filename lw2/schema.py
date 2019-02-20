@@ -326,7 +326,7 @@ class PostsInput(graphene.InputObjectType):
 class PostsUnset(graphene.InputObjectType):
     meta = graphene.Boolean()
     draft = graphene.Boolean()
-    url = graphene.String()   
+    url = graphene.Boolean()  
 
 class PostsNew(graphene.Mutation):
     class Arguments:
@@ -344,7 +344,6 @@ class PostsNew(graphene.Mutation):
 
     @staticmethod
     def mutate(root, info, document=None):
-        pdb.set_trace()
         user = info.context.user
         if not user.is_authenticated:
             raise ValueError("Your user isn't logged in")
@@ -374,6 +373,13 @@ class PostsEdit(graphene.Mutation):
     post = graphene.Field(Post)
     _id = graphene.String(name="_id")
     slug = graphene.String()
+
+    def resolve__id(self, info):
+        return self.post.id
+
+    def resolve_slug(self, info):
+        return self.post.slug
+    
     @staticmethod
     def mutate(root, info, document_id=None, set=None, unset=None):
         if not set:
