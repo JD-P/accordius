@@ -79,6 +79,8 @@ class Comment(models.Model):
 def validate_tag_text(text):
     if "," in text or ";" in text:
         raise ValidationError("Commas and semicolons aren't allowed in tags")
+    if not re.sub("\s","",text):
+        raise ValidationError("Can't create a tag that's only whitespace")
     
 class Tag(models.Model):
     """A tag on a post, comment, or other taggable item.

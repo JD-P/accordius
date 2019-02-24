@@ -253,7 +253,7 @@ class TagTestCase(TestCase):
         response2 = c.post("/api/tags/",
                            {"document_id":self.post1.id,
                             "text":"my;bad;tag"})
-        self.assertEquals(response2.status_code, 400)
+        self.assertEquals(response1.status_code, 400)
 
     def test_no_post_without_tags(self):
         """Test that it's not possible to create a post without at least one 
@@ -281,7 +281,10 @@ class TagTestCase(TestCase):
         server.
 
         TODO: Write this test and make it pass."""
-        pass
+        response0 = c.post("/api/tags/",
+                           {"document_id":self.post1.id,
+                           "text":"  \n \t  "})
+        self.assertEqual(400, response0.status_code)
     
     def test_tag_duplicate_fails(self):
         """Test that you can't add the same tag twice to the same post.
