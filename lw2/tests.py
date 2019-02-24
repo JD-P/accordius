@@ -58,7 +58,11 @@ class PostTestCase(TestCase):
         API.
 
         TODO: Write this test and make it pass."""
-        pass
+        response0 = c.post("/api/posts/",
+                           {"title":"",
+                            "url":"https://en.wikipedia.org/wiki/Fruit",
+                            "body":"My Apple Orange Mango"})
+        self.assertEqual(400, response0.status_code)
     
     def test_tagset_update_get(self):
         self.login()

@@ -81,6 +81,12 @@ class PostSerializer(serializers.ModelSerializer):
                   'voteCount', 'commentCount', 'viewCount', 'meta',
                   'af', 'question', 'draft')
 
+    def validate_title(self, value):
+        if not value:
+            raise serializers.ValidationError("You must give your post a title.")
+        else:
+            return value
+        
     def create(self, validated_data):
         # We're forced to create the posts manually to generate ID's for them
         # TODO: Comments almost certainly suffer from a similar error, reevaluate
