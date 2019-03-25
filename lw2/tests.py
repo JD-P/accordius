@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.test import Client
 from django.contrib.auth.models import User
 from lw2.models import *
-from lw2.pagestores.simplepagestore import SimplePageStore
+from lw2.pagestores.simplepagestore import PageStore as SimplePageStore
 from datetime import datetime, timedelta
 import json
 import pdb
@@ -140,15 +140,15 @@ class SimplePagestoreTestCase(TestCase):
         post1.save()
         
     def test_pagestore_read(self):
-        page = self.pagestore.read("test-slug-1")
-        self.assertEquals("My Fruit Post", page.title)
+        page_body = self.pagestore.read("test-slug-1")
+        self.assertEquals("My Apple Orange Mango", page_body.text)
 
     def test_pagestore_write(self):
-        page = self.pagestore.read("test-slug-1")
-        page.title = "My Newly Titled Fruit Post"
-        self.pagestore.write("test-slug-1", page)
-        page = self.pagestore.read("test-slug-1")
-        self.assertEquals("My Newly Titled Fruit Post", page.title)
+        page_body = self.pagestore.read("test-slug-1")
+        page_body.text = "My New Fruit Post Body"
+        self.pagestore.write("test-slug-1", page_body)
+        page_body = self.pagestore.read("test-slug-1")
+        self.assertEquals("My New Fruit Post Body", page_body.text)
 
     def test_pagestore_exists(self):
         self.assertEquals(True, self.pagestore.exists("test-slug-1"))

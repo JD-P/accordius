@@ -134,3 +134,8 @@ STATIC_URL = '/static/'
 REST_FRAMEWORK = {
     'DEFAULT_FILTER_BACKENDS': ('django_filters.rest_framework.DjangoFilterBackend',)
 }
+
+
+# Accordius
+
+ACCORDIUS_PAGE_STORE = 'lw2.pagestores.simplepagestore'
