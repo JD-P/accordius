@@ -2,11 +2,10 @@ from django.test import TestCase
 from django.test import Client
 from django.contrib.auth.models import User
 from lw2.models import *
+from lw2.pagestores.simplepagestore import SimplePageStore
 from datetime import datetime, timedelta
 import json
 import pdb
-
-# Create your tests here.
 
 c = Client()
 
@@ -128,6 +127,32 @@ class CommentTestCase(TestCase):
 
         TODO: Write this test and make it pass."""
         pass
+
+class SimplePagestoreTestCase(TestCase):
+    def setUp(self):
+        self.pagestore = SimplePageStore()
+        user = User.objects.create_user('testuser', 'jd@jdpressman.com', 'testpassword')
+        post1 = Post.objects.create(id='aaaaaaaaaaaaaaaaa', user=user,
+                                    title='My Fruit Post',
+                                    url=None, slug="test-slug-1",
+                                    base_score=5,
+                                    body="My Apple Orange Mango")
+        post1.save()
+        
+    def test_pagestore_read(self):
+        page = self.pagestore.read("test-slug-1")
+        self.assertEquals("My Fruit Post", page.title)
+
+    def test_pagestore_write(self):
+        page = self.pagestore.read("test-slug-1")
+        page.title = "My Newly Titled Fruit Post"
+        self.pagestore.write("test-slug-1", page)
+        page = self.pagestore.read("test-slug-1")
+        self.assertEquals("My Newly Titled Fruit Post", page.title)
+
+    def test_pagestore_exists(self):
+        self.assertEquals(True, self.pagestore.exists("test-slug-1"))
+        self.assertEquals(False, self.pagestore.exists("my-nonexistent-post"))
         
 class SearchTestCase(TestCase):
     def setUp(self):
