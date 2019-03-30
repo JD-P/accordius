@@ -1,6 +1,7 @@
 from django.shortcuts import render
 from django.views import View
 from django.http import HttpResponse
+from django.contrib.auth import authenticate, login
 from django.utils.datastructures import MultiValueDictKeyError
 from rest_framework import viewsets, filters, generics
 from rest_framework.permissions import DjangoModelPermissions
@@ -14,7 +15,8 @@ from lw2.models import *
 from lw2.serializers import *
 import lw2.search as wl_search
 import datetime
-import pdb
+import json
+
 # Create your views here.
 
 class CsrfExemptSessionAuthentication(SessionAuthentication):
@@ -23,6 +25,28 @@ class CsrfExemptSessionAuthentication(SessionAuthentication):
     def enforce_csrf(self, request):
         return
 
+class LoginViewSet(viewsets.ViewSet):
+    """
+    API endpoint that provides login functionality to the accordius system.
+    """
+    def create(self, request):
+        username = request.POST["username"]
+        password = request.POST["password"]
+        user = authenticate(request=request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return HttpResponse(
+                json.dumps({"user_id":user.id,
+                         "session_key":request.session.session_key,
+                         "expiration":(
+                             request.session.get_expiry_date().timestamp())
+                })
+                )
+                         
+        else:
+            return HttpResponse("Incorrect username or password!",
+                                status=401)
+    
 class UserViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows users to be viewed or edited.
@@ -130,6 +154,14 @@ class VoteViewSet(viewsets.ModelViewSet):
     queryset = Vote.objects.all()
     serializer_class = VoteSerializer
 
+class NotificationViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows notifications to be viewed.
+    """
+    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    queryset = Notification.objects.all()
+    serializer_class = NotificationSerializer
+    
 class ConversationViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows private message conversations to be viewed or edited.

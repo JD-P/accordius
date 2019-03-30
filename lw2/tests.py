@@ -10,6 +10,24 @@ import pdb
 
 c = Client()
 
+class LoginTestCase(TestCase):
+    """Tests associated with the authentication system for accordius."""
+    def setUp(self):
+        user = User.objects.create_user('testuser', 'jd@jdpressman.com', 'testpassword')
+        user_profile = Profile()
+        user_profile.user = user
+        user_profile.save()
+
+    def test_rest_login(self):
+        """Test that we can use the standard login view in the REST API."""
+        response0 = c.post("/api/login/",
+                           {"username":"testuser",
+                            "password":"testpassword"})
+        login = json.loads(response0.content.decode("UTF-8"))
+        self.assertTrue(login["user_id"])
+        self.assertTrue(login["session_key"])
+        self.assertTrue(login["expiration"])
+        
 class PostTestCase(TestCase):
     # TODO: Stop anonymous users from making posts and add unit tests for it
     def setUp(self):
@@ -365,6 +383,45 @@ class VoteTestCase(TestCase):
         post1_updated = Post.objects.all()[0]
         self.assertEqual(post1_updated.base_score,4)
 
+class NotificationTestCase(TestCase):
+    """Tests for accordius notifications. Currently a barely implemented feature."""
+    def setUp(self):
+        user = User.objects.create_user('testuser', 'jd@jdpressman.com', 'testpassword')
+        user_profile = Profile()
+        user_profile.user = user
+        user_profile.save()
+
+
+        notification = Notification(user=user,
+                                    document_id="1111",
+                                    document_type="page",
+                                    type="edit",
+                                    message="A new edit has been made to your page 'Cranberry'.",
+                                    viewed=False)
+        notification.full_clean()
+        notification.save()
+
+    def login(self):
+        response0 = c.post("/graphql/", {"query":"""
+        mutation Login($user: String, $password: String) {
+        Login(username: $user, password: $password) {
+        userId
+        sessionKey
+        expiration
+        }
+        } """,
+                                         "variables":"""{
+                                         "user":"testuser",
+                                         "password":"testpassword"
+                                         }"""})
+
+    def test_notification_retrieval(self):
+        self.login()
+        response0 = c.get("/api/notifications/")
+        notifications = json.loads(response0.content.decode("UTF-8"))
+        self.assertEqual("A new edit has been made to your page 'Cranberry'.",
+                         notifications[0]["message"])
+        
 class ConversationTestCase(TestCase):
     """Tests for the private message and conversation functionality of accordius."""
 
@@ -417,3 +474,5 @@ class ConversationTestCase(TestCase):
         response2 = c.get("/api/messages/")
         messages = json.loads(response2.content.decode("UTF-8"))
         self.assertEqual("My Test Message", messages[0]["body"])
+
+    # TODO: Add security tests, including participant tests

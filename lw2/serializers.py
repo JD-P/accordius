@@ -229,6 +229,16 @@ class VoteSerializer(serializers.HyperlinkedModelSerializer):
                     collection_name),
                 status_code=400)
 
+class NotificationSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ('url', 'user', 'created_at',
+                  'document_id', 'document_type', 'type',
+                  'message', 'viewed')
+        read_only_fields = ('url', 'user', 'created_at',
+                            'document_id', 'document_type', 'type',
+                            'message', 'viewed')
+        
 class ConversationSerializer(serializers.HyperlinkedModelSerializer):
     participants = serializers.CharField(
         write_only=True,

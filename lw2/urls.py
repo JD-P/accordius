@@ -6,11 +6,13 @@ from lw2.models import Tag
 from lw2 import views
 
 router = routers.DefaultRouter()
+router.register(r'login', views.LoginViewSet, basename="login")
 router.register(r'users', views.UserViewSet)
 router.register(r'posts', views.PostViewSet)
 router.register(r'comments', views.CommentViewSet)
 router.register(r'tags', views.TagViewSet)
 router.register(r'votes',views.VoteViewSet)
+router.register(r'notifications', views.NotificationViewSet)
 router.register(r'conversations', views.ConversationViewSet)
 router.register(r'participants', views.ParticipantViewSet)
 router.register(r'messages', views.MessageViewSet)
