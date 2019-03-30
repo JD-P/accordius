@@ -119,7 +119,9 @@ class TagViewSet(viewsets.ModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
     filter_fields = ('user','document_id','text',)
-        
+
+#TODO: Add API endpoint here that returns tag validation regex    
+    
 class VoteViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows votes to be viewed or edited.
@@ -128,8 +130,35 @@ class VoteViewSet(viewsets.ModelViewSet):
     queryset = Vote.objects.all()
     serializer_class = VoteSerializer
 
+class ConversationViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows private message conversations to be viewed or edited.
+
+    A conversation is made up of a series of Messages, with two or more Participants.
+    Conversation objects can be thought of as containers for their underlying 
+    Message and Participant objects."""
+    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    queryset = Conversation.objects.all()
+    serializer_class = ConversationSerializer
+
+class ParticipantViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows conversation participants to be viewed or edited.
+
+    This object is a component of the conversation object, and denotes which users
+    are members of the conversation.
+    """
+    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    queryset = Participant.objects.all()
+    serializer_class = ParticipantSerializer
     
-#TODO: Add API endpoint here that returns tag validation regex    
+class MessageViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows messages to be viewed or edited.
+    """
+    authentication_classes = (CsrfExemptSessionAuthentication, BasicAuthentication)
+    queryset = Message.objects.all()
+    serializer_class = MessageSerializer
     
 class BanViewSet(viewsets.ModelViewSet):
     """

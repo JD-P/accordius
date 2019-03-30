@@ -1,4 +1,5 @@
 from django.contrib.auth.models import User
+from django.http import HttpResponse
 from lw2.models import *
 from rest_framework import serializers
 import datetime
@@ -227,6 +228,68 @@ class VoteSerializer(serializers.HyperlinkedModelSerializer):
                 "Collection '{}' is not handled by accordius!".format(
                     collection_name),
                 status_code=400)
+
+class ConversationSerializer(serializers.HyperlinkedModelSerializer):
+    participants = serializers.CharField(
+        write_only=True,
+        help_text="Comma separated list of participating usernames.")
+    class Meta:
+        model = Conversation
+        fields = ('url', 'created_at', 'title', 'participants')
+        read_only_fields = ('id', 'created_at',)
+
+    def create(self, validated_data):
+        conversation = Conversation(title=validated_data.pop('title'))
+        conversation.full_clean()
+
+        try:
+            participants = [User.objects.get(username=username) for username in
+                            validated_data["participants"].split(",")]
+        except Participant.DoesNotExist:
+            return HttpResponse(
+                "Nonexistent participant in string '{}'".format(
+                    validated_data["participants"]),
+                status_code=409
+                )
+
+        conversation.save()
+        
+        for user in participants:
+            participant = Participant(user=user,
+                                      conversation=conversation)
+            participant.full_clean()
+            participant.save()
+      
+        return conversation
+    
+class ParticipantSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Participant
+        fields = ('user', 'conversation')
+    # TODO: Add permissions to this so you can't just add yourself to other peoples
+    # conversations
+    
+class MessageSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Message
+        fields = ('user', 'conversation', 'created_at', 'body')
+        ready_only_fields = ('user', 'created_at')
+
+    def create(self, validated_data):
+        user = self.context["request"].user
+        conversation = validated_data["conversation"]
+        if user in [participant.user for participant in
+                    conversation.participants.all()]:
+            message = Message(user=user,
+                              conversation=conversation,
+                              body=validated_data["body"])
+            message.full_clean()
+            message.save()
+            return message
+        else:
+            return HttpResponse(
+                "User '{}' is not a participant in this conversation.".format(user.username),
+                status=401)
         
 class BanSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:

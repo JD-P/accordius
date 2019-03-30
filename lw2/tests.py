@@ -172,6 +172,7 @@ class SearchTestCase(TestCase):
 
 class InviteTestCase(TestCase):
     """Test the user invite and signup API's."""
+    
     def setUp(self):
         user = User.objects.create_user('testuser', 'jd@jdpressman.com', 'testpassword')
         user_profile = Profile()
@@ -363,3 +364,56 @@ class VoteTestCase(TestCase):
         response1 = c.get("/api/votes/")
         post1_updated = Post.objects.all()[0]
         self.assertEqual(post1_updated.base_score,4)
+
+class ConversationTestCase(TestCase):
+    """Tests for the private message and conversation functionality of accordius."""
+
+    def setUp(self):
+        user = User.objects.create_user('testuser', 'jd@jdpressman.com', 'testpassword')
+        user_profile = Profile()
+        user_profile.user = user
+        user_profile.save()
+
+        user2 = User.objects.create_user('bernie', 'example@example.com', 'testpassword')
+        user_profile2 = Profile()
+        user_profile2.user = user2
+        user_profile2.save()
+        
+    def login(self):
+        response0 = c.post("/graphql/", {"query":"""
+        mutation Login($user: String, $password: String) {
+        Login(username: $user, password: $password) {
+        userId
+        sessionKey
+        expiration
+        }
+        } """,
+                                         "variables":"""{
+                                         "user":"testuser",
+                                         "password":"testpassword"
+                                         }"""})
+
+        
+    def test_conversation_creation(self):
+        """Test that we can create the private message conversation container."""
+        self.login()
+        response0 = c.post("/api/conversations/",
+                           {"title":"My Test Conversation",
+                            "participants":"testuser,bernie"})
+        response1 = c.get("/api/conversations/")
+        conversations = json.loads(response1.content.decode("UTF-8"))
+        self.assertEqual("My Test Conversation", conversations[0]["title"])
+
+    def test_message_creation(self):
+        """Test that we can create a message associated with a conversation."""
+        self.login()
+        response0 = c.post("/api/conversations/",
+                           {"title":"My Test Conversation",
+                            "participants":"testuser,bernie"})
+        conversation_url = json.loads(response0.content.decode("UTF-8"))["url"]
+        response1 = c.post("/api/messages/",
+                           {"conversation":conversation_url,
+                            "body":"My Test Message"})
+        response2 = c.get("/api/messages/")
+        messages = json.loads(response2.content.decode("UTF-8"))
+        self.assertEqual("My Test Message", messages[0]["body"])
