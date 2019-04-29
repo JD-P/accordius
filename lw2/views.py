@@ -14,8 +14,9 @@ from lw2.models import *
 from lw2.serializers import *
 import lw2.search as wl_search
 import datetime
-import pdb
-# Create your views here.
+import json
+import h_annot # TODO: Modularize this out as some kind of extension
+
 
 class CsrfExemptSessionAuthentication(SessionAuthentication):
     """The API doesn't actually communicate with a users browser, so CSRF 
@@ -202,3 +203,44 @@ class CommentSearchView(viewsets.ViewSet):
                                                many=True)
         return HttpResponse(JSONRenderer().render(comment_serializer.data),
                             content_type="application/json")
+
+class AnnotationList(viewsets.ViewSet):
+    """Get a list of hypothes.is annotations for a given user."""
+    def list(self, request):
+        try:
+            username = request.GET["username"]
+        except KeyError:
+            return HttpResponse(
+                json.dumps(
+                    {"code":"annotation_search_no_user",
+                     "message":"No username given to search.",
+                     "blame":"client",
+                     "retry":False}
+                ),
+                status=400,
+                content_type="application/json"
+            )
+        try:
+            limit = request.GET["limit"]
+        except KeyError:
+            limit = 10
+        
+        try:
+            user = User.objects.get(username=username)       
+        except User.DoesNotExist:
+            return HttpResponse(
+                json.dumps(
+                    {"code":"annotation_search_user_not_found",
+                     "message":"The user '{}' does not exist, check the spelling.".format(username),
+                     "blame":"user",
+                     "retry":False}
+                ),
+                status=404
+            )
+        return HttpResponse(
+            h_annot.api.search(user.profile.hypothesis_api_key,
+                               user=user.profile.hypothesis_user,
+                               group=user.profile.hypothesis_group,
+                               limit=limit),
+            content_type="application/json"
+            )

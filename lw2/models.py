@@ -8,12 +8,23 @@ import re
 # Create your models here.
 
 class Profile(models.Model):
-    user = models.ForeignKey(User, related_name="profile", on_delete=models.CASCADE)
+    """User profile information.
+
+    - display_name: An alternative name for the user used in contexts where e.g real 
+    name is desirable.
+    - karma: The users karma score, this may be removed in later versions.
+    - last_notifications_check: The last time the user's client checked their notifications.
+    - moderator: Whether the user is a moderator or not. (May eventually be moved)"""
+    user = models.OneToOneField(User, related_name="profile", on_delete=models.CASCADE)
     display_name = models.CharField(null=True, max_length=40)
     karma = models.IntegerField(default=1)
     last_notifications_check = models.DateTimeField(default=datetime.today)
     moderator = models.BooleanField(default=False)
-
+    # TODO: Modularize this out into an extension somehow
+    hypothesis_user = models.CharField(null=True, default=None, max_length=512)
+    hypothesis_group = models.CharField(null=True, default=None, max_length=512)
+    hypothesis_api_key = models.CharField(null=True, default=None, max_length=512)
+    
 class Post(models.Model):
     """A post object.
 
