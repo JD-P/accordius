@@ -208,12 +208,12 @@ class AnnotationList(viewsets.ViewSet):
     """Get a list of hypothes.is annotations for a given user."""
     def list(self, request):
         try:
-            username = request.GET["username"]
+            user_id = request.GET["userid"]
         except KeyError:
             return HttpResponse(
                 json.dumps(
                     {"code":"annotation_search_no_user",
-                     "message":"No username given to search.",
+                     "message":"No userid given to search.",
                      "blame":"client",
                      "retry":False}
                 ),
@@ -221,18 +221,32 @@ class AnnotationList(viewsets.ViewSet):
                 content_type="application/json"
             )
         try:
-            limit = request.GET["limit"]
+            limit = int(request.GET["limit"])
+            if limit > 100:
+                limit = 100
+        except ValueError:
+            try:
+                limit = int(request.GET["limit"].split(".")[0])
+            except:
+                return HttpResponse(
+                    json.dumps(
+                        {"code":"annotation_search_limit_malformed",
+                         "message":"The value '{}' is not an integer value.".format(
+                             request.GET["limit"]),
+                         "blame":"user",
+                         "retry":False}),
+                    status=400)
         except KeyError:
             limit = 10
         
         try:
-            user = User.objects.get(username=username)       
+            user = User.objects.get(id=user_id)       
         except User.DoesNotExist:
             return HttpResponse(
                 json.dumps(
                     {"code":"annotation_search_user_not_found",
-                     "message":"The user '{}' does not exist, check the spelling.".format(username),
-                     "blame":"user",
+                     "message":"The user with ID '{}' does not exist.".format(user_id),
+                     "blame":"client",
                      "retry":False}
                 ),
                 status=404
