@@ -140,7 +140,7 @@ class TagSerializer(serializers.HyperlinkedModelSerializer):
         except IndexError:
             raise ValueError("No post with ID {}".format(document_id))
         #TODO: Use more flexible way of determining this permission
-        if (user != post.user) and not user.profile.all()[0].moderator:
+        if (user != post.user) and not user.profile.moderator:
             raise ValueError(
                 "User '{}' is not authorized to add a tag to this document.".format(
                     user.username
@@ -256,7 +256,7 @@ class InviteSerializer(serializers.HyperlinkedModelSerializer):
         rng = random.SystemRandom()
         invite.code = str(rng.getrandbits(64))
         invite.date_created = datetime.datetime.now()
-        if user.profile.all()[0].moderator and expires:
+        if user.profile.moderator and expires:
             invite.expires = expires
         else:
             invite.expires = datetime.datetime.now() + datetime.timedelta(weeks=+9)

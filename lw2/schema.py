@@ -12,7 +12,6 @@ from datetime import datetime, timezone
 
 import hashlib
 import base64
-import pdb
 
 def make_id(username, utc_timestamp):
     hashable = username + str(utc_timestamp)
@@ -46,8 +45,8 @@ class UserType(DjangoObjectType):
 
     def resolve_display_name(self, info):
         try:
-            display_name = self.profile.all()[0].display_name
-        except IndexError:
+            display_name = self.profile.display_name
+        except AttributeError:
             print("User {} has no profile!".format(self.username))
             display_name = self.username
         if display_name:
@@ -57,14 +56,14 @@ class UserType(DjangoObjectType):
 
     def resolve_karma(self, info):
         try:
-            return self.profile.all()[0].karma
-        except IndexError:
+            return self.profile.karma
+        except AttributeError:
             raise ValueError("User {} has no profile!".format(self.username))
 
     def resolve_last_notifications_check(self, info):
         try:
-            return self.profile.all()[0].last_notifications_check
-        except IndexError:
+            return self.profile.last_notifications_check
+        except AttributeError:
             raise ValueError("User {} has no profile!".format(self.username))
 
 class UsersInput(graphene.InputObjectType):
