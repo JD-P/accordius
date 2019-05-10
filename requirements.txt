@@ -1,5 +1,7 @@
 aniso8601==3.0.2
 bleach==3.1.0
+certifi==2019.3.9
+chardet==3.0.4
 cyclic==1.0.0
 Django==2.1.7
 django-filter==2.0.0
@@ -9,18 +11,23 @@ graphene-django==2.2.0
 graphql-core==2.1
 graphql-relay==0.4.5
 html5lib==1.0.1
+idna==2.8
 Markdown==3.0.1
 MarkdownSubscript==2.1.1
 MarkdownSuperscript==2.1.1
 mdx-bleach==0.1.4
 mdx-linkify==1.2
--e git+git@github.com:JD-P/mdx_pmwiki_tables.git@master#egg=mdx-pmwiki-tables
+mdx-pmwiki-tables==0.1
 mdx-truly-sane-lists==1.2
 promise==2.2.1
+python-dateutil==2.8.0
+python-hypothesis==0.3.0
 pytz==2018.9
 rcslice==1.1.0
+requests==2.21.0
 Rx==1.6.1
 singledispatch==3.4.0.3
 six==1.12.0
 typing==3.6.6
+urllib3==1.24.2
 webencodings==0.5.1
