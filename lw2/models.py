@@ -20,6 +20,10 @@ class Profile(models.Model):
     karma = models.IntegerField(default=1)
     last_notifications_check = models.DateTimeField(default=datetime.today)
     moderator = models.BooleanField(default=False)
+    # TODO: Modularize this out into an extension somehow
+    hypothesis_user = models.CharField(null=True, default=None, max_length=512)
+    hypothesis_group = models.CharField(null=True, default=None, max_length=512)
+    hypothesis_api_key = models.CharField(null=True, default=None, max_length=512)
     
 class Post(models.Model):
     """A post object.

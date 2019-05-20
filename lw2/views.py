@@ -14,8 +14,9 @@ from lw2.models import *
 from lw2.serializers import *
 import lw2.search as wl_search
 import datetime
-import pdb
-# Create your views here.
+import json
+import h_annot # TODO: Modularize this out as some kind of extension
+
 
 class CsrfExemptSessionAuthentication(SessionAuthentication):
     """The API doesn't actually communicate with a users browser, so CSRF 
@@ -202,3 +203,58 @@ class CommentSearchView(viewsets.ViewSet):
                                                many=True)
         return HttpResponse(JSONRenderer().render(comment_serializer.data),
                             content_type="application/json")
+
+class AnnotationList(viewsets.ViewSet):
+    """Get a list of hypothes.is annotations for a given user."""
+    def list(self, request):
+        try:
+            user_id = request.GET["userid"]
+        except KeyError:
+            return HttpResponse(
+                json.dumps(
+                    {"code":"annotation_search_no_user",
+                     "message":"No userid given to search.",
+                     "blame":"client",
+                     "retry":False}
+                ),
+                status=400,
+                content_type="application/json"
+            )
+        try:
+            limit = int(request.GET["limit"])
+            if limit > 100:
+                limit = 100
+        except ValueError:
+            try:
+                limit = int(request.GET["limit"].split(".")[0])
+            except:
+                return HttpResponse(
+                    json.dumps(
+                        {"code":"annotation_search_limit_malformed",
+                         "message":"The value '{}' is not an integer value.".format(
+                             request.GET["limit"]),
+                         "blame":"user",
+                         "retry":False}),
+                    status=400)
+        except KeyError:
+            limit = 10
+        
+        try:
+            user = User.objects.get(id=user_id)       
+        except User.DoesNotExist:
+            return HttpResponse(
+                json.dumps(
+                    {"code":"annotation_search_user_not_found",
+                     "message":"The user with ID '{}' does not exist.".format(user_id),
+                     "blame":"client",
+                     "retry":False}
+                ),
+                status=404
+            )
+        return HttpResponse(
+            h_annot.api.search(user.profile.hypothesis_api_key,
+                               user=user.profile.hypothesis_user,
+                               group=user.profile.hypothesis_group,
+                               limit=limit),
+            content_type="application/json"
+            )

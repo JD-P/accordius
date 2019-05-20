@@ -16,6 +16,7 @@ router.register(r'comment_search', views.CommentSearchView, basename="comment-se
 router.register(r'bans', views.BanViewSet)
 router.register(r'invites', views.InviteViewSet)
 router.register(r'my_invites', views.InviteList, basename="my-invites")
+router.register(r'annotations', views.AnnotationList, basename="annotations")
 
 urlpatterns = [
     url(r'^graphql', csrf_exempt(GraphQLView.as_view())),
