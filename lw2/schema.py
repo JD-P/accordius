@@ -763,19 +763,19 @@ class Query(object):
 
     def resolve_comments_list(self, info, **kwargs):
         args = dict(kwargs.get('terms'))
-        id = args.get('post_id')
-        view = args.get('view')
-        if view == 'recentComments':
-            return CommentModel.objects.all()
-        if view == 'allRecentComments' and args["user_id"]:
+        if "user_id" in args:
             user = User.objects.get(id=int(args["user_id"]))
             return CommentModel.objects.filter(user=user)
-        try:
-            document = PostModel.objects.get(id=id)
-            return document.comments.all()
-        except:
-            return graphene.List(Comment, resolver=lambda x,y: [])
+        elif "post_id" in args:
+            try:
+                document = PostModel.objects.get(id=args["post_id"])
+                return document.comments.all()
+            except:
+                return graphene.List(Comment, resolver=lambda x,y: [])
+        else:
+            return CommentModel.objects.all().order_by('-posted_at')
 
+            
     def resolve_vote(self, info, **kwargs):
         id = kwargs.get('id')
 
