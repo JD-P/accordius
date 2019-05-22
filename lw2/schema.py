@@ -3,7 +3,7 @@ import graphene
 from graphene.types.generic import GenericScalar
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
-from django.db.models.functions import Greatest
+from django.db.models import Case, When, Max
 from .models import Profile,Vote, Notification, Conversation, Participant
 from .models import Message as MessageModel
 from .models import Post as PostModel
@@ -729,18 +729,19 @@ class Query(object):
     def resolve_all_posts(self, info, **kwargs):
         #TODO: Figure out a better way to maintain compatibility here
         #...If there is one.
-        return PostModel.objects.all().annotate(test=Greatest('posted_at','comments__posted_at')).order_by('-test')
+        return PostModel.objects.all()
 
     def resolve_posts_list(self, info, **kwargs):
         args = kwargs.get("terms")
         if args.user_id:
             user = User.objects.get(id=args.user_id)
             return PostModel.objects.filter(user=user)
+        posts = PostModel.objects.all()
         if args.limit and args.offset:
-            return PostModel.objects.all().annotate(test=Greatest('posted_at','comments__posted_at')).order_by('-test')[args.offset:args.offset + args.limit]
+            return posts[args.offset:args.offset + args.limit]
         elif args.limit:
-            return PostModel.objects.all().annotate(test=Greatest('posted_at','comments__posted_at')).order_by('-test')[:args.limit]
-        return PostModel.objects.all().annotate(test=Greatest('posted_at','comments__posted_at')).order_by('-test')
+            return posts[:args.limit]
+        return posts
 
     def resolve_comment(self, info, **kwargs):
         id = kwargs.get('id')
