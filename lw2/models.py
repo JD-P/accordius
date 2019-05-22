@@ -44,6 +44,8 @@ class Post(models.Model):
     - view_count: How many views the post has gotten since it was published.
     - draft: Whether the post is a draft or not."""
 
+    class Meta:
+        ordering = ['-posted_at']
     id = models.CharField(primary_key=True, max_length=17)
     posted_at = models.DateTimeField(default=datetime.today)
     frontpage_date = models.DateTimeField(blank=True, null=True, default=None)
