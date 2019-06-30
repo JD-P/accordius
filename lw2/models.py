@@ -2,6 +2,7 @@ from datetime import date, datetime
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.exceptions import ValidationError
+from .markdown import md
 import re
 
 
@@ -62,6 +63,11 @@ class Post(models.Model):
     comment_count = models.IntegerField(default=0)
     view_count = models.IntegerField(default=0)
     draft = models.BooleanField(default=True)
+
+    @property
+    def html_body(self):
+        # TODO: Add caching
+        return md.convert(self.body)
     
 class Comment(models.Model):
     """A comment on a Post. 
@@ -88,6 +94,11 @@ class Comment(models.Model):
     retracted = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
 
+    @property
+    def html_body(self):
+        # TODO: Add caching
+        return md.convert(self.body)
+    
 def validate_tag_text(text):
     if "," in text or ";" in text:
         raise ValidationError("Commas and semicolons aren't allowed in tags")

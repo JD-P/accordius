@@ -73,13 +73,14 @@ class PostSerializer(serializers.ModelSerializer):
     af = serializers.BooleanField(default=False, read_only=True)
     question = serializers.BooleanField(default=False, read_only=True)
     voteCount = serializers.IntegerField(source="vote_count", read_only=True)
+    htmlBody = serializers.CharField(source="html_body", read_only=True)
     draft = serializers.BooleanField(default=False, read_only=True)
     class Meta:
         model = Post
         fields = ('_id', 'userId', 'postedAt', 'title',
                   'url', 'slug', 'body', 'baseScore',
                   'voteCount', 'commentCount', 'viewCount', 'meta',
-                  'af', 'question', 'draft')
+                  'af', 'question', 'htmlBody', 'draft')
 
     def validate_title(self, value):
         if not value:
@@ -116,15 +117,32 @@ class CommentSerializer(serializers.ModelSerializer):
     postedAt = serializers.DateTimeField(source="posted_at", read_only=True)
     baseScore = serializers.IntegerField(source="base_score", read_only=True)
     body = serializers.CharField()
-    retracted = serializers.BooleanField()
+    retracted = serializers.BooleanField(default=False)
     answer = serializers.BooleanField(default=False, read_only=True)
-    htmlBody = serializers.CharField(default="", read_only=True)
-    isDeleted = serializers.BooleanField(source="is_deleted")
+    htmlBody = serializers.CharField(source="html_body", read_only=True)
+    isDeleted = serializers.BooleanField(default=False, source="is_deleted")
     class Meta:
         model = Comment
         fields = ('_id', 'userId', 'postId', 'parentCommentId',
                   'postedAt', 'baseScore', 'body', 'retracted',
                   'answer', 'htmlBody', 'isDeleted')
+
+    def create(self, validated_data):
+        print(validated_data)
+        user = self.context["request"].user
+        post = Post.objects.get(id=validated_data["post"]["id"])
+        if "parentCommentId" in validated_data:
+            parent = Comment.objects.get(id=validated_data["parent_comment"]["id"])
+        else:
+            parent = None
+        new_comment = Comment(
+            id=make_id_from_user(user.username),
+            user=user,
+            post=post,
+            parent_comment=parent,
+            body=validated_data["body"])
+        new_comment.save()
+        return new_comment
     
 class TagSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:

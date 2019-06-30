@@ -6,8 +6,6 @@ from datetime import datetime, timedelta
 import json
 import pdb
 
-# Create your tests here.
-
 c = Client()
 
 class PostTestCase(TestCase):
@@ -39,6 +37,7 @@ class PostTestCase(TestCase):
         self.assertEqual(len(posts), 1)
         self.assertEqual(posts[0]["title"], "My Fruit Post")
         self.assertEqual(posts[0]["body"], "My Apple Orange Mango")
+        self.assertEqual(posts[0]["htmlBody"], "<p>My Apple Orange Mango</p>")
 
     def test_post_creation_url(self):
         self.login()
@@ -52,6 +51,7 @@ class PostTestCase(TestCase):
         self.assertEqual(posts[0]["title"], "My Fruit Post")
         self.assertEqual(posts[0]["url"], "https://en.wikipedia.org/wiki/Fruit")
         self.assertEqual(posts[0]["body"], "My Apple Orange Mango")
+        self.assertEqual(posts[0]["htmlBody"], "<p>My Apple Orange Mango</p>")
 
     def test_post_creation_no_title_fails(self):
         """Test that the server will not accept a post with no title in REST 
@@ -100,8 +100,38 @@ class PostTestCase(TestCase):
 
 class CommentTestCase(TestCase):
     def setUp(self):
-        pass
+        self.user = User.objects.create_user('testuser', 'jd@jdpressman.com', 'testpassword')
+        self.post1 = Post.objects.create(id='aaaaaaaaaaaaaaaaa', user=self.user,
+                                         title='My Fruit Post',
+                                         url=None, slug="test-slug-1",
+                                         base_score=5,
+                                         body="My Apple Orange Mango")
+        self.post1.save()
 
+    def login(self):
+        response0 = c.post("/graphql/", {"query":"""
+        mutation Login($user: String, $password: String) {
+        Login(username: $user, password: $password) {
+        userId
+        sessionKey
+        expiration
+        }
+        } """,
+                                         "variables":"""{
+                                         "user":"testuser",
+                                         "password":"testpassword"
+                                         }"""})
+        
+    def test_comment_creation(self):
+        """Test that we can create a comment on a post and read the results
+        through the API."""
+        self.login()
+        response0 = c.post("/api/comments/",
+                           {"postId":self.post1.id,
+                            "body":"My Test Comment"})
+        comment = json.loads(response0.content.decode("UTF-8"))
+        self.assertEqual(comment["body"], "My Test Comment")
+        
     def test_deleted_comment_no_reply(self):
         """Test that the server will not allow you to create new comments with
         a deleted comment as the parent.
