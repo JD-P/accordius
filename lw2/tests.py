@@ -131,6 +131,7 @@ class CommentTestCase(TestCase):
                             "body":"My Test Comment"})
         comment = json.loads(response0.content.decode("UTF-8"))
         self.assertEqual(comment["body"], "My Test Comment")
+        self.assertEqual(comment["htmlBody"], "<p>My Test Comment</p>")
         
     def test_deleted_comment_no_reply(self):
         """Test that the server will not allow you to create new comments with
