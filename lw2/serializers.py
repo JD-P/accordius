@@ -245,6 +245,23 @@ class VoteSerializer(serializers.HyperlinkedModelSerializer):
                 "Collection '{}' is not handled by accordius!".format(
                     collection_name),
                 status_code=400)
+
+class ConversationSerializer(serializers.HyperlinkedModelSerializer):
+    createdAt = serializers.DateTimeField(source="created_at", read_only=True)
+    class Meta:
+        model = Conversation
+        fields = ('createdAt', 'title')
+
+class ParticipantSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = Participant
+        fields = ('user', 'conversation')
+
+class MessageSerializer(serializers.HyperlinkedModelSerializer):
+    createdAt = serializers.DateTimeField(source="created_at", read_only=True)
+    class Meta:
+        model = Message
+        fields = ('user', 'conversation', 'createdAt', 'body')
         
 class BanSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:

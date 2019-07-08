@@ -4,7 +4,6 @@ from django.contrib.auth.models import User
 from lw2.models import *
 from datetime import datetime, timedelta
 import json
-import pdb
 
 c = Client()
 
@@ -394,3 +393,45 @@ class VoteTestCase(TestCase):
         response1 = c.get("/api/votes/")
         post1_updated = Post.objects.all()[0]
         self.assertEqual(post1_updated.base_score,4)
+
+class PrivateMessageTestCase(TestCase):
+    """Tests for the private message system. This is made up of multiple
+    models including conversation, participant, and message."""
+    def setUp(self):
+        user = User.objects.create_user('testuser', 'jd@jdpressman.com', 'testpassword')
+        user_profile = Profile()
+        user_profile.user = user
+        user_profile.save()
+        user2 = User.objects.create_user('testuser2', 'saturn@example.com', 'testpassword')
+        user2_profile = Profile()
+        user2_profile.user = user2
+        user2_profile.save()
+
+    def login(self):
+        response0 = c.post("/graphql/", {"query":"""
+        mutation Login($user: String, $password: String) {
+        Login(username: $user, password: $password) {
+        userId
+        sessionKey
+        expiration
+        }
+        } """,
+                                         "variables":"""{
+                                         "user":"testuser",
+                                         "password":"testpassword"
+                                         }"""})
+
+    def test_full_conversation(self):
+        self.login()
+        response0 = c.post("/api/conversations/",
+                           {"title":"Lovely Test Conversation"})
+        response1 = c.post("/api/participants/",
+                           {"user":"http://127.0.0.1/api/users/1",
+                            "conversation":"http://127.0.0.1/api/conversations/1"})
+        response2 = c.post("/api/participants/",
+                           {"user":"http://127.0.0.1/api/users/2",
+                            "conversation":"http://127.0.0.1/api/conversations/1"})
+        self.assertEqual((200,200,200),
+                         (response0.status_code,
+                          response1.status_code,
+                          response2.status_code))

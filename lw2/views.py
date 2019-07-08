@@ -131,7 +131,34 @@ class VoteViewSet(viewsets.ModelViewSet):
 
     
 #TODO: Add API endpoint here that returns tag validation regex    
-    
+
+class ConversationViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows the private message wrapper objects to be viewed or
+    edited.
+    """
+    permission_classes = (DjangoModelPermissions,)
+    queryset = Conversation.objects.all()
+    serializer_class = ConversationSerializer
+
+class ParticipantViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows the record(s) of users participating in a conversation
+    to be viewed or edited.
+    """
+    permission_classes = (DjangoModelPermissions,)
+    queryset = Participant.objects.all()
+    serializer_class = ParticipantSerializer
+
+class MessageViewSet(viewsets.ModelViewSet):
+    """
+    API endpoint that allows messages in a private message conversation to be viewed
+    or edited.
+    """
+    permission_classes = (DjangoModelPermissions,)
+    queryset = Message.objects.all()
+    serializer_class = MessageSerializer
+
 class BanViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows bans to be viewed or edited.
